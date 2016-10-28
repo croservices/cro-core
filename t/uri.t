@@ -77,6 +77,48 @@ parses 'A URI with a fragment but no query',
     !*.query.defined,
     *.fragment eq 'nose';
 
+parses 'A URI with an empty path',
+    'foo://example.com:8042',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses 'A URI with a path of /',
+    'foo://example.com:8042/',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '/',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses 'A URI with an empty path and a query',
+    'foo://example.com:8042?name=ferret',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '',
+    *.query eq 'name=ferret',
+    !*.fragment.defined;
+
+parses 'A URI with an empty path and a fragment',
+    'foo://example.com:8042#nose',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '',
+    !*.query.defined,
+    *.fragment eq 'nose';
+
+parses 'Empty query and fragment are defined and empty string',
+    'foo://example.com:8042?#',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '',
+    *.query.defined,
+    *.query eq '',
+    *.fragment.defined,
+    *.fragment eq '';
+
 refuses 'Something without a : after a scheme', 'foo';
 
 refuses 'Scheme starting with a digit', '1ab:example';
