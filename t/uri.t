@@ -141,6 +141,19 @@ for <a a1 redis+tls some-protocol some.protocol LOUD-CAT x123+45.6-7z> -> $s {
 }
 
 for qw/%% " ^ [ ] { } < >/ -> $bad {
+    refuses $bad ~ ' in path', 'foo://localhost/bar/a' ~ $bad ~ '/wat';
+}
+
+for qw[- . _ ~ : @ ! $ & ' ( ) * + , ; =] -> $ok {
+    parses $ok ~ ' in path', 'foo://localhost/bar/a' ~ $ok ~ '/yes',
+        *.scheme eq 'foo',
+        *.authority eq 'localhost',
+        *.path eq "/bar/a{$ok}/yes",
+        !*.query.defined,
+        !*.fragment.defined;
+}
+
+for qw/%% " ^ [ ] { } < >/ -> $bad {
     refuses $bad ~ ' in query', 'foo://localhost/bar?oh' ~ $bad ~ 'wat';
     refuses $bad ~ ' in fragment', 'foo://localhost/bar#oh' ~ $bad ~ 'wat';
 }
