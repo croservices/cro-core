@@ -144,6 +144,34 @@ for qw/%% " ^ [ ] { } < >/ -> $bad {
     refuses $bad ~ ' in path', 'foo://localhost/bar/a' ~ $bad ~ '/wat';
 }
 
+parses 'Path broken up into segments',
+    'foo://example.com/abc/d-e/fg',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com',
+    *.path eq '/abc/d-e/fg',
+    *.path-segments.elems == 3,
+    *.path-segments[0] eq 'abc',
+    *.path-segments[1] eq 'd-e',
+    *.path-segments[2] eq 'fg';
+
+parses 'Simple percent escapes in path',
+    'foo://example.com/a%20b/%2F%2Fc',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com',
+    *.path eq '/a%20b/%2F%2Fc',
+    *.path-segments.elems == 2,
+    *.path-segments[0] eq 'a b',
+    *.path-segments[1] eq '//c';
+
+parses 'UTF-8 escapes in path',
+    'foo://example.com/%C3%80b/%E3%82%A2%E3%82%A2',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com',
+    *.path eq '/%C3%80b/%E3%82%A2%E3%82%A2',
+    *.path-segments.elems == 2,
+    *.path-segments[0] eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b",
+    *.path-segments[1] eq "\c[KATAKANA LETTER A]\c[KATAKANA LETTER A]";
+
 for qw[- . _ ~ : @ ! $ & ' ( ) * + , ; =] -> $ok {
     parses $ok ~ ' in path', 'foo://localhost/bar/a' ~ $ok ~ '/yes',
         *.scheme eq 'foo',
