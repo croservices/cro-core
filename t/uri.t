@@ -140,6 +140,55 @@ for <a a1 redis+tls some-protocol some.protocol LOUD-CAT x123+45.6-7z> -> $s {
         !*.fragment.defined;
 }
 
+parses 'Authority parsed into host and port',
+    'foo://example.com:8080/',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8080',
+    *.host eq 'example.com',
+    *.host-class == Crow::Uri::Host::RegName,
+    *.port == 8080,
+    !*.userinfo.defined;
+
+for <127.0.0.1 8.8.8.8 65.2.137.99 255.255.255.255 0.0.0.0> -> $ipv4 {
+    parses "IPv4 host $ipv4",
+        'foo://' ~ $ipv4 ~ ':8080/',
+        *.scheme eq 'foo',
+        *.authority eq "{$ipv4}:8080",
+        *.host eq $ipv4,
+        *.host-class == Crow::Uri::Host::IPv4,
+        *.port == 8080,
+        !*.userinfo.defined;
+}
+
+for <312.27.1.2 1.2.3.256 af.de.bc.11> -> $not-ipv4 {
+    parses "Not-an-IPv4-address $not-ipv4 as a reg-name",
+        'foo://' ~ $not-ipv4 ~ ':8080/',
+        *.scheme eq 'foo',
+        *.authority eq "{$not-ipv4}:8080",
+        *.host eq $not-ipv4,
+        *.host-class == Crow::Uri::Host::RegName,
+        *.port == 8080,
+        !*.userinfo.defined;
+}
+
+parses 'When no port, port is not defined',
+    'foo://example.com/',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com',
+    *.host eq 'example.com',
+    *.host-class == Crow::Uri::Host::RegName,
+    !*.port.defined,
+    !*.userinfo.defined;
+
+parses 'When empty port, port is not defined',
+    'foo://example.com:/',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:',
+    *.host eq 'example.com',
+    *.host-class == Crow::Uri::Host::RegName,
+    !*.port.defined,
+    !*.userinfo.defined;
+
 for qw/%% " ^ [ ] { } < >/ -> $bad {
     refuses $bad ~ ' in path', 'foo://localhost/bar/a' ~ $bad ~ '/wat';
 }
