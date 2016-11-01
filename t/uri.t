@@ -171,6 +171,24 @@ for <312.27.1.2 1.2.3.256 af.de.bc.11> -> $not-ipv4 {
         !*.userinfo.defined;
 }
 
+for <1080:0:0:0:8:800:200C:417A FF01:0:0:0:0:0:0:101 0:0:0:0:0:0:0:1
+     0:0:0:0:0:0:0:0 1080::8:800:200C:417A FF01::101 ::1 ::
+     0:0:0:0:0:0:13.1.68.3 0:0:0:0:0:FFFF:129.144.52.38
+     ::FFFF:129.144.52.38> -> $ipv6 {
+    parses "IPv6 host $ipv6",
+        'foo://[' ~ $ipv6 ~ ']:8080/',
+        *.scheme eq 'foo',
+        *.authority eq "[{$ipv6}]:8080",
+        *.host eq $ipv6,
+        *.host-class == Crow::Uri::Host::IPv6,
+        *.port == 8080,
+        !*.userinfo.defined;
+}
+
+for <::OMG 1080::800:200C::417A 0-1 ::FFFF:257.144.52.38> -> $not-ipv6 {
+    refuses "Bad IPv6 address $not-ipv6", 'foo://[' ~ $not-ipv6 ~ ']:8080/';
+}
+
 parses 'When no port, port is not defined',
     'foo://example.com/',
     *.scheme eq 'foo',
