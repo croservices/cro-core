@@ -204,6 +204,28 @@ for <vX.123 v8.big@ss v10.x/y/z v.abc> -> $not-ipvfuture {
     refuses "Bad IPvFuture address $not-ipvfuture", 'foo://[' ~ $not-ipvfuture ~ ']:8080/';
 }
 
+parses 'Empty host name is allowed in generic URIs',
+    'foo://:8080/',
+    *.scheme eq 'foo',
+    *.authority eq ':8080',
+    *.host eq '',
+    *.host-class == Crow::Uri::Host::RegName,
+    *.port == 8080,
+    !*.userinfo.defined;
+
+parses 'Hostname can have unreserved and subdelims',
+    Q{foo://B-._a1!$&'()*+,;=~:8080/},
+    *.scheme eq 'foo',
+    *.authority eq Q{B-._a1!$&'()*+,;=~:8080},
+    *.host eq Q{B-._a1!$&'()*+,;=~},
+    *.host-class == Crow::Uri::Host::RegName,
+    *.port == 8080,
+    !*.userinfo.defined;
+
+for <a:b y[ z] %% %zy> -> $bad {
+    refuses "Bad reg-name with $bad in it", "foo://a{$bad}c:5000/";
+}
+
 parses 'When no port, port is not defined',
     'foo://example.com/',
     *.scheme eq 'foo',
