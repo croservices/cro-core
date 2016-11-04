@@ -226,6 +226,16 @@ for <a:b y[ z] %% %zy> -> $bad {
     refuses "Bad reg-name with $bad in it", "foo://a{$bad}c:5000/";
 }
 
+parses 'Percent-encoded things in reg-name',
+    'foo://%C3%80b.%E3%82%A2%E3%82%A2.com:8080/',
+    *.scheme eq 'foo',
+    *.authority eq '%C3%80b.%E3%82%A2%E3%82%A2.com:8080',
+    *.host eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com",
+    *.host-class == Crow::Uri::Host::RegName,
+    *.port == 8080,
+    !*.userinfo.defined,
+    *.path eq '/';
+
 parses 'When no port, port is not defined',
     'foo://example.com/',
     *.scheme eq 'foo',
