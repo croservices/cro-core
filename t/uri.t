@@ -189,6 +189,21 @@ for <::OMG 1080::800:200C::417A 0-1 ::FFFF:257.144.52.38> -> $not-ipv6 {
     refuses "Bad IPv6 address $not-ipv6", 'foo://[' ~ $not-ipv6 ~ ']:8080/';
 }
 
+for <v8.OMG v7.$!&'()*:;+,= vA2B.X_X-X.~Y vfe.xxx> -> $ipvfuture {
+    parses "IPvFuture host $ipvfuture",
+        'foo://[' ~ $ipvfuture ~ ']:8080/',
+        *.scheme eq 'foo',
+        *.authority eq "[{$ipvfuture}]:8080",
+        *.host eq $ipvfuture,
+        *.host-class == Crow::Uri::Host::IPvFuture,
+        *.port == 8080,
+        !*.userinfo.defined;
+}
+
+for <vX.123 v8.big@ss v10.x/y/z v.abc> -> $not-ipvfuture {
+    refuses "Bad IPvFuture address $not-ipvfuture", 'foo://[' ~ $not-ipvfuture ~ ']:8080/';
+}
+
 parses 'When no port, port is not defined',
     'foo://example.com/',
     *.scheme eq 'foo',
