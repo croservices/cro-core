@@ -254,6 +254,65 @@ parses 'When empty port, port is not defined',
     !*.port.defined,
     !*.userinfo.defined;
 
+parses 'Can parse userinfo on a reg-name',
+    'ssh://jnthn@some.secret.host',
+    *.scheme eq 'ssh',
+    *.authority eq 'jnthn@some.secret.host',
+    *.host eq 'some.secret.host',
+    *.host-class == Crow::Uri::Host::RegName,
+    !*.port.defined,
+    *.userinfo eq 'jnthn',
+    *.user eq 'jnthn',
+    !*.password.defined;
+
+parses 'Can parse userinfo on an IP address',
+    'ssh://root@112.34.56.78',
+    *.scheme eq 'ssh',
+    *.authority eq 'root@112.34.56.78',
+    *.host eq '112.34.56.78',
+    *.host-class == Crow::Uri::Host::IPv4,
+    !*.port.defined,
+    *.userinfo eq 'root',
+    *.user eq 'root',
+    !*.password.defined;
+
+parses 'We split on the (deprecated, but in the RFC nonetheless, user:pass form)',
+    'foo://bob:s3cr3t@fbi.gov',
+    *.scheme eq 'foo',
+    *.authority eq 'bob:s3cr3t@fbi.gov',
+    *.host eq 'fbi.gov',
+    *.host-class == Crow::Uri::Host::RegName,
+    !*.port.defined,
+    *.userinfo eq 'bob:s3cr3t',
+    *.user eq 'bob',
+    *.password eq 's3cr3t';
+
+parses 'We can have unreserved and subdelims in userinfo',
+    Q{foo://B-._a1!$&':()*+,;=~@omg.url:8080/},
+    *.scheme eq 'foo',
+    *.authority eq Q{B-._a1!$&':()*+,;=~@omg.url:8080},
+    *.host eq 'omg.url',
+    *.host-class == Crow::Uri::Host::RegName,
+    *.port == 8080,
+    *.userinfo eq Q{B-._a1!$&':()*+,;=~},
+    *.user eq Q{B-._a1!$&'},
+    *.password eq Q{()*+,;=~};
+
+for <y[ z] %% %zy> -> $bad {
+    refuses "Bad userinfo with $bad in it", "foo://a{$bad}c@foo.bar:5000/";
+}
+
+parses 'Can decode %-encoded things in userinfo',
+    'foo://%C3%80b:%E3%82%A2%E3%82%A2@unicode.org/lol',
+    *.scheme eq 'foo',
+    *.authority eq '%C3%80b:%E3%82%A2%E3%82%A2@unicode.org',
+    *.host eq 'unicode.org',
+    *.host-class == Crow::Uri::Host::RegName,
+    !*.port.defined,
+    *.userinfo eq '%C3%80b:%E3%82%A2%E3%82%A2',
+    *.user eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b",
+    *.password eq "\c[KATAKANA LETTER A]\c[KATAKANA LETTER A]";
+
 for qw/%% " ^ [ ] { } < >/ -> $bad {
     refuses $bad ~ ' in path', 'foo://localhost/bar/a' ~ $bad ~ '/wat';
 }
