@@ -4,7 +4,7 @@ use Test;
 constant TEST_PORT = 31313;
 
 # Type relationships.
-ok Crow::TCP::Listener ~~ Crow::Listener, 'TCP listener is a listener';
+ok Crow::TCP::Listener ~~ Crow::Source, 'TCP listener is a source';
 ok Crow::TCP::Listener.produces ~~ Crow::TCP::Connection, 'TCP listener produces connections';
 ok Crow::TCP::Connection ~~ Crow::Connection, 'TCP connection is a connection';
 ok Crow::TCP::Connection.sends ~~ Crow::TCP::Message, 'TCP connection sends TCP messages';
