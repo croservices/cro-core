@@ -121,4 +121,49 @@ my class AnotherTestTransform does Crow::Transform {
     is @transformed>>.value, (7, 8), 'Correctly applied both transforms to messages';
 }
 
+my class TestSink does Crow::Sink {
+    has Int $.sum = 0;
+    method consumes() { TestIntMessage }
+    method sinker(Supply:D $in) returns Supply:D {
+        supply {
+            whenever $in -> $message {
+                $!sum += $message.value;
+            }
+        }
+    }
+}
+
+{
+    my $sink = TestSink.new;
+    my $comp = Crow.compose($sink);
+    ok $comp ~~ Crow::Sink, 'Composing just a sink produces a Crow::Sink';
+    ok $comp ~~ Crow::CompositeSink, 'More specifically, a Crow::CompositeSink';
+    is $comp.consumes, TestIntMessage, 'Composite sink has correct consumes';
+    my @fake-messages = (5, 37).map: { TestIntMessage.new(value => $_) };
+    my $sink-supply = $comp.sinker(Supply.from-list(@fake-messages));
+    isa-ok $sink-supply, Supply, 'Composite sink returns a Supply';
+    is $sink-supply.list.elems, 0, 'Sink does not produce any messages';
+    is $sink.sum, 42, 'Composite sink processed messages';
+}
+
+{
+    my $sink = TestSink.new;
+    my $comp = Crow.compose(TestTransform, AnotherTestTransform, $sink);
+    ok $comp ~~ Crow::Sink, 'Composing transforms and sink produces a Crow::Sink';
+    ok $comp ~~ Crow::CompositeSink, 'More specifically, a Crow::CompositeSink';
+    is $comp.consumes, TestMessage, 'Composite sink has correct consumes';
+    my @fake-messages = <máta hovězí>.map: { TestMessage.new(body => $_) };
+    my $sink-supply = $comp.sinker(Supply.from-list(@fake-messages));
+    isa-ok $sink-supply, Supply, 'Composite sink returns a Supply';
+    is $sink-supply.list.elems, 0, 'Sink does not produce any messages';
+    is $sink.sum, 13, 'Composite sink processed messages';
+}
+
+throws-like { Crow.compose(AnotherTestTransform, TestSink, TestTransform) },
+    X::Crow::Compose::SinkMustBeLast;
+throws-like { Crow.compose(TestSink, TestTransform) },
+    X::Crow::Compose::SinkMustBeLast;
+throws-like { Crow.compose(TestSink, TestMessageSource) },
+    X::Crow::Compose::SinkMustBeLast;
+
 done-testing;
