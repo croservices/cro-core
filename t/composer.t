@@ -166,4 +166,12 @@ throws-like { Crow.compose(TestSink, TestTransform) },
 throws-like { Crow.compose(TestSink, TestMessageSource) },
     X::Crow::Compose::SinkMustBeLast;
 
+{
+    my $sink = TestSink.new;
+    my $comp = Crow.compose(TestMessageSource, TestTransform, AnotherTestTransform, $sink);
+    isa-ok $comp, Crow::Service, 'Composing source/transform/sink gives a Crow::Service';
+    $comp.start();
+    is $sink.sum, 13, 'Starting service processes all messages';
+}
+
 done-testing;
