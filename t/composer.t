@@ -187,4 +187,35 @@ throws-like { Crow.compose(TestMessageSource, TestTransform, TestSink) },
     producer => TestTransform,
     consumer => TestSink;
 
+my class NaughtySource does Crow::Source {
+    method produces() { Int }
+    method incoming() { supply { } }
+}
+my class NaughtyTransform1 does Crow::Transform {
+    method consumes() { Int }
+    method produces() { TestMessage }
+    method transformer($pipeline) { supply { } }
+}
+my class NaughtyTransform2 does Crow::Transform {
+    method consumes() { TestMessage }
+    method produces() { Int }
+    method transformer($pipeline) { supply { } }
+}
+my class NaughtySink does Crow::Sink {
+    method consumes() { Int }
+    method sinker($pipeline) { supply { } }
+}
+throws-like { Crow.compose(NaughtySource) },
+    X::Crow::Compose::BadProducer,
+    producer => NaughtySource;
+throws-like { Crow.compose(NaughtyTransform1) },
+    X::Crow::Compose::BadConsumer,
+    consumer => NaughtyTransform1;
+throws-like { Crow.compose(NaughtyTransform2) },
+    X::Crow::Compose::BadProducer,
+    producer => NaughtyTransform2;
+throws-like { Crow.compose(NaughtySink) },
+    X::Crow::Compose::BadConsumer,
+    consumer => NaughtySink;
+
 done-testing;
