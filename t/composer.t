@@ -174,4 +174,17 @@ throws-like { Crow.compose(TestSink, TestMessageSource) },
     is $sink.sum, 13, 'Starting service processes all messages';
 }
 
+throws-like { Crow.compose(TestMessageSource, TestSink) },
+    X::Crow::Compose::Mismatch,
+    producer => TestMessageSource,
+    consumer => TestSink;
+throws-like { Crow.compose(TestMessageSource, AnotherTestTransform) },
+    X::Crow::Compose::Mismatch,
+    producer => TestMessageSource,
+    consumer => AnotherTestTransform;
+throws-like { Crow.compose(TestMessageSource, TestTransform, TestSink) },
+    X::Crow::Compose::Mismatch,
+    producer => TestTransform,
+    consumer => TestSink;
+
 done-testing;
