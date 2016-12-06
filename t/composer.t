@@ -1,5 +1,9 @@
 use Crow;
+use Crow::Message;
+use Crow::Replyable;
+use Crow::Sink;
 use Crow::Source;
+use Crow::Transform;
 use Test;
 
 my class TestMessage does Crow::Message {
@@ -217,5 +221,29 @@ throws-like { Crow.compose(NaughtyTransform2) },
 throws-like { Crow.compose(NaughtySink) },
     X::Crow::Compose::BadConsumer,
     consumer => NaughtySink;
+
+class TestReplyableSourceWithSink does Crow::Source does Crow::Replyable {
+    has $.sinker = TestSink.new;
+    method produces() { TestMessage }
+    method incoming() returns Supply:D {
+        supply {
+            emit TestMessage.new(body => 'vánoce');
+            emit TestMessage.new(body => 'stromek');
+        }
+    }
+    method replier() returns Crow::Replier {
+        $!sinker
+    }
+}
+
+{
+    my $test-reply-source = TestReplyableSourceWithSink.new();
+    my $comp = Crow.compose($test-reply-source, TestTransform, AnotherTestTransform);
+    isa-ok $comp, Crow::Service,
+        'Composing source+transforms with sink from replyable source gives a Crow::Service';
+    $comp.start();
+    is $test-reply-source.sinker.sum, 14,
+        'Starting service uses sink to consume messages';
+}
 
 done-testing;
