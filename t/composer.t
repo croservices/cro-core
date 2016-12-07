@@ -255,6 +255,13 @@ class TestReplyableSourceWithSink does Crow::Source does Crow::Replyable {
         X::Crow::Compose::TooManySinks,
         replyable => TestReplyableSourceWithSink,
         'Cannot have sink from replyable as well as sink already in the pipeline';
+    throws-like {
+            Crow.compose($reply-source, TestTransform)
+        },
+        X::Crow::Compose::Mismatch,
+        producer => TestTransform,
+        consumer => $reply-source.replier,
+        'Sink from replyable must type match the last producer before it';
 }
 
 done-testing;
