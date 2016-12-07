@@ -246,4 +246,15 @@ class TestReplyableSourceWithSink does Crow::Source does Crow::Replyable {
         'Starting service uses sink to consume messages';
 }
 
+{
+    my $reply-source = TestReplyableSourceWithSink.new;
+    my $sink = TestSink.new;
+    throws-like {
+            Crow.compose($reply-source, TestTransform, AnotherTestTransform, $sink)
+        },
+        X::Crow::Compose::TooManySinks,
+        replyable => TestReplyableSourceWithSink,
+        'Cannot have sink from replyable as well as sink already in the pipeline';
+}
+
 done-testing;
