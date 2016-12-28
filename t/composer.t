@@ -264,4 +264,50 @@ class TestReplyableSourceWithSink does Crow::Source does Crow::Replyable {
         'Sink from replyable must type match the last producer before it';
 }
 
+class TestReplyableSourceWithTransform1 does Crow::Source does Crow::Replyable {
+    method produces() { TestMessage }
+    method incoming() returns Supply:D {
+        supply {
+            emit TestMessage.new(body => 'vánoce');
+            emit TestMessage.new(body => 'stromek');
+        }
+    }
+    method replier() returns Crow::Replier {
+        AnotherTestTransform
+    }
+}
+
+{
+    my $comp = Crow.compose(TestReplyableSourceWithTransform1, TestTransform);
+    ok $comp ~~ Crow::Source,
+        'Source replyable (transform to go at end) + transform produces Crow::Source';
+    ok $comp ~~ Crow::CompositeSource, 'More specifically, a Crow::CompositeSource';
+    is $comp.produces, TestIntMessage, 'Composite source has correct produces';
+    my @incoming = $comp.incoming.list;
+    is @incoming>>.value, [7, 7], 'Correct messages produced by transform';
+}
+
+class TestReplyableSourceWithTransform2 does Crow::Source does Crow::Replyable {
+    method produces() { TestMessage }
+    method incoming() returns Supply:D {
+        supply {
+            emit TestMessage.new(body => 'rajčata');
+            emit TestMessage.new(body => 'česnek');
+        }
+    }
+    method replier() returns Crow::Replier {
+        TestTransform
+    }
+}
+
+{
+    my $comp = Crow.compose(TestReplyableSourceWithTransform2, AnotherTestTransform);
+    ok $comp ~~ Crow::Source,
+        'Source replyable (transform to go in middle) + transform produces Crow::Source';
+    ok $comp ~~ Crow::CompositeSource, 'More specifically, a Crow::CompositeSource';
+    is $comp.produces, TestIntMessage, 'Composite source has correct produces';
+    my @incoming = $comp.incoming.list;
+    is @incoming>>.value, [8, 7], 'Correct messages produced by transform';
+}
+
 done-testing;
