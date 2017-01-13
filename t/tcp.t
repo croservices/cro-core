@@ -7,8 +7,8 @@ constant TEST_PORT = 31313;
 ok Crow::TCP::Listener ~~ Crow::Source, 'TCP listener is a source';
 ok Crow::TCP::Listener.produces ~~ Crow::TCP::Connection, 'TCP listener produces connections';
 ok Crow::TCP::Connection ~~ Crow::Connection, 'TCP connection is a connection';
-ok Crow::TCP::Connection.sends ~~ Crow::TCP::Message, 'TCP connection sends TCP messages';
-ok Crow::TCP::Connection.receives ~~ Crow::TCP::Message, 'TCP connection receives TCP messages';
+ok Crow::TCP::Connection ~~ Crow::Replyable, 'TCP connection is replyable';
+ok Crow::TCP::Connection.produces ~~ Crow::TCP::Message, 'TCP connection produces TCP messages';
 ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
 
 # Crow::TCP::Listener
@@ -78,13 +78,21 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     is $second-message.data.list, (0xFE, 0xED, 0xBE, 0xEF),
         'Second message data has correct value';
 
-    $server-conn.send('First reply'.encode('utf-8'));
-    is $client-received.receive.decode('utf-8'), 'First reply',
-        'Blob reply sent successfully';
+    my $replier = $server-conn.replier;
+    ok $replier ~~ Crow::Sink, 'The TCP connection replier is a Crow::Sink';
 
-    $server-conn.send(Crow::TCP::Message.new(data => 'Second reply'.encode('utf-8')));
+    my $fake-replies = Supplier.new;
+    my $sinker = $replier.sinker($fake-replies.Supply);
+    ok $sinker ~~ Supply, 'Reply sinker returns a Supply';
+    lives-ok { $sinker.tap }, 'Can tap that Supply';
+
+    $fake-replies.emit(Crow::TCP::Message.new(data => 'First reply'.encode('utf-8')));
+    is $client-received.receive.decode('utf-8'), 'First reply',
+        'First TCP::Message reply sent successfully';
+
+    $fake-replies.emit(Crow::TCP::Message.new(data => 'Second reply'.encode('utf-8')));
     is $client-received.receive.decode('utf-8'), 'Second reply',
-        'TCP::Message reply sent successfully';
+        'Second TCP::Message reply sent successfully';
 }
 
 # Crow::TCP::Client
