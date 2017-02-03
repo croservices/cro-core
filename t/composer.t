@@ -361,5 +361,29 @@ class BadReplyableTransform1 does Crow::Transform does Crow::Replyable {
         'Replyable with transform to be inserted at end with type mismatch throws';
 }
 
+class BadReplyableTransform2 does Crow::Transform does Crow::Replyable {
+    method consumes() { TestMessage }
+    method produces() { TestBinaryMessage }
+    method transformer(Supply:D $in) returns Supply:D {
+        supply {
+            whenever $in -> $message {
+                emit TestBinaryMessage.new(body => $message.body.encode('utf-8'));
+            }
+        }
+    }
+    method replier() returns Crow::Replier {
+        TestSink.new
+    }
+}
+
+{
+    my $test-reply-source = TestReplyableSourceWithSink.new();
+    throws-like {
+            Crow.compose($test-reply-source, BadReplyableTransform2, AnotherTestTransform)
+        },
+        X::Crow::Compose::TooManySinks,
+        replyable => $test-reply-source,
+        'Cannot have two replyables that provide sinks';
+}
 
 done-testing;
