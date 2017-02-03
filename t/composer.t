@@ -310,4 +310,29 @@ class TestReplyableSourceWithTransform2 does Crow::Source does Crow::Replyable {
     is @incoming>>.value, [8, 7], 'Correct messages produced by transform';
 }
 
+class TestReplyableTransform does Crow::Transform does Crow::Replyable {
+    method consumes() { TestMessage }
+    method produces() { TestBinaryMessage }
+    method transformer(Supply:D $in) returns Supply:D {
+        supply {
+            whenever $in -> $message {
+                emit TestBinaryMessage.new(body => $message.body.encode('utf-8'));
+            }
+        }
+    }
+    method replier() returns Crow::Replier {
+        AnotherTestTransform
+    }
+}
+
+{
+    my $test-reply-source = TestReplyableSourceWithSink.new();
+    my $comp = Crow.compose($test-reply-source, TestReplyableTransform);
+    isa-ok $comp, Crow::Service,
+        'Source replyable (sink) + transform replyable (transform) gives Crow::Service';
+    $comp.start();
+    is $test-reply-source.sinker.sum, 14,
+        'Service pipeline works correctly';
+}
+
 done-testing;
