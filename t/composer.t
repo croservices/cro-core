@@ -386,4 +386,70 @@ class BadReplyableTransform2 does Crow::Transform does Crow::Replyable {
         'Cannot have two replyables that provide sinks';
 }
 
+class BadReplyableSource1 does Crow::Source does Crow::Replyable {
+    method produces() { TestMessage }
+    method incoming() returns Supply:D {
+        supply { }
+    }
+    method replier() {
+        TestMessageSource
+    }
+}
+class BadReplyableSource2 does Crow::Source does Crow::Replyable {
+    method produces() { TestMessage }
+    method incoming() returns Supply:D {
+        supply { }
+    }
+    method replier() {
+        'lol not even a Crow::Thing'
+    }
+}
+class BadReplyableTransform3 does Crow::Transform does Crow::Replyable {
+    method consumes() { TestMessage }
+    method produces() { TestBinaryMessage }
+    method transformer(Supply:D $in) returns Supply:D {
+        supply { }
+    }
+    method replier() {
+        TestMessageSource
+    }
+}
+class BadReplyableTransform4 does Crow::Transform does Crow::Replyable {
+    method consumes() { TestMessage }
+    method produces() { TestBinaryMessage }
+    method transformer(Supply:D $in) returns Supply:D {
+        supply { }
+    }
+    method replier() {
+        'lol not even a Crow::Thing'
+    }
+}
+
+{
+    throws-like {
+            Crow.compose(BadReplyableSource1, TestTransform)
+        },
+        X::Crow::Compose::BadReplier,
+        replyable => BadReplyableSource1,
+        'A replyable source cannot return a Crow::Source from replier';
+    throws-like {
+            Crow.compose(BadReplyableSource2, TestTransform)
+        },
+        X::Crow::Compose::BadReplier,
+        replyable => BadReplyableSource2,
+        'A replyable source must return a Crow::Transform or a Crow::Sink';
+    throws-like {
+            Crow.compose(BadReplyableTransform3, AnotherTestTransform)
+        },
+        X::Crow::Compose::BadReplier,
+        replyable => BadReplyableTransform3,
+        'A replyable transform cannot return a Crow::Source from replier';
+    throws-like {
+            Crow.compose(BadReplyableTransform4, AnotherTestTransform)
+        },
+        X::Crow::Compose::BadReplier,
+        replyable => BadReplyableTransform4,
+        'A replyable transform must return a Crow::Transform or a Crow::Sink';
+}
+
 done-testing;
