@@ -452,4 +452,65 @@ class BadReplyableTransform4 does Crow::Transform does Crow::Replyable {
         'A replyable transform must return a Crow::Transform or a Crow::Sink';
 }
 
+my class TestConnection does Crow::Connection does Crow::Replyable {
+    has Supplier $.send .= new;
+    has Supplier $!replier .= new;
+    method receive() { $!replier.Supply }
+
+    method produces() { TestMessage }
+    method incoming() { $!send.Supply }
+
+    method replier() {
+        class :: does Crow::Sink {
+            has $.replier;
+            method consumes() { TestMessage }
+            method sinker($input) {
+                supply {
+                    whenever $input {
+                        $!replier.emit(.body);
+                        LAST $!replier.emit('(closed)');
+                    }
+                }
+            }
+        }.new(:$!replier)
+    }
+}
+my class TestConnectionSource does Crow::Source {
+    has Supplier $.connection-injection .= new;
+    method produces() { TestConnection }
+    method incoming() {
+        $!connection-injection.Supply
+    }
+}
+my class TestUppercaseTransform does Crow::Transform {
+    method consumes() { TestMessage }
+    method produces() { TestMessage }
+    method transformer($input) {
+        supply {
+            whenever $input {
+                emit TestMessage.new(body => .body.uc)
+            }
+        }
+    }
+}
+
+{
+    my $conn-source = TestConnectionSource.new();
+    my $service = Crow.compose($conn-source, TestUppercaseTransform);
+    isa-ok $service, Crow::Service,
+        'Connection source with replyable connection and transform makes a Crow::Service';
+    lives-ok { $service.start },
+        'Could start service involving connection manager';
+
+    my $conn-a = TestConnection.new;
+    $conn-source.connection-injection.emit($conn-a);
+    my $response-channel = $conn-a.receive.Channel;
+    $conn-a.send.emit(TestMessage.new(body => 'bbq'));
+    is $response-channel.receive, 'BBQ', 'First connection first message processed';
+    $conn-a.send.emit(TestMessage.new(body => 'beef'));
+    is $response-channel.receive, 'BEEF', 'First connection second message processed';
+    $conn-a.send.done;
+    is $response-channel.receive, '(closed)', 'Connection close communicated to sink';
+}
+
 done-testing;
