@@ -504,13 +504,29 @@ my class TestUppercaseTransform does Crow::Transform {
 
     my $conn-a = TestConnection.new;
     $conn-source.connection-injection.emit($conn-a);
-    my $response-channel = $conn-a.receive.Channel;
+    my $response-channel-a = $conn-a.receive.Channel;
     $conn-a.send.emit(TestMessage.new(body => 'bbq'));
-    is $response-channel.receive, 'BBQ', 'First connection first message processed';
+    is $response-channel-a.receive, 'BBQ', 'First connection first message processed';
+
+    my $conn-b = TestConnection.new;
+    $conn-source.connection-injection.emit($conn-b);
+    my $response-channel-b = $conn-b.receive.Channel;
+    $conn-b.send.emit(TestMessage.new(body => 'wok'));
+    is $response-channel-b.receive, 'WOK',
+        'Second connection first message processed (while first connection open)';
+
     $conn-a.send.emit(TestMessage.new(body => 'beef'));
-    is $response-channel.receive, 'BEEF', 'First connection second message processed';
+    is $response-channel-a.receive, 'BEEF', 'First connection second message processed';
     $conn-a.send.done;
-    is $response-channel.receive, '(closed)', 'Connection close communicated to sink';
+    is $response-channel-a.receive, '(closed)',
+        'First connection close communicated to sink';
+
+    $conn-b.send.emit(TestMessage.new(body => 'pork'));
+    is $response-channel-b.receive, 'PORK',
+        'Second connection second message processed (after first connection closed)';
+    $conn-b.send.done;
+    is $response-channel-b.receive, '(closed)',
+        'Second connection close communicated to sink';
 }
 
 done-testing;
