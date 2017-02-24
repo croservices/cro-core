@@ -628,4 +628,11 @@ my class CollectingTestSink does Crow::Sink {
         'Connection close communicated to sink';
 }
 
+{
+    my $conn-source = TestConnectionSource.new();
+    throws-like { Crow.compose($conn-source, CollectingTestSink.new) },
+        X::Crow::ConnectionManager::Misuse,
+        'Cannot have an explicit sink and a replyable connection';
+}
+
 done-testing;
