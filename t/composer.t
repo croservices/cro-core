@@ -529,4 +529,26 @@ my class TestUppercaseTransform does Crow::Transform {
         'Second connection close communicated to sink';
 }
 
+{
+    my $conn-source = TestConnectionSource.new();
+    my $service = Crow.compose($conn-source);
+    isa-ok $service, Crow::Service,
+        'Connection source with replyable connection makes a Crow::Service';
+    lives-ok { $service.start },
+        'Could start identity service involving connection manager';
+
+    my $conn = TestConnection.new;
+    $conn-source.connection-injection.emit($conn);
+    my $response-channel = $conn.receive.Channel;
+    $conn.send.emit(TestMessage.new(body => 'maminka'));
+    is $response-channel.receive, 'maminka',
+        'First message echoed back';
+    $conn.send.emit(TestMessage.new(body => 'miminko'));
+    is $response-channel.receive, 'miminko',
+        'Second message echoed back';
+    $conn.send.done;
+    is $response-channel.receive, '(closed)',
+        'Connection close communicated to sink';
+}
+
 done-testing;
