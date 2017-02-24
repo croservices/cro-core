@@ -635,4 +635,86 @@ my class CollectingTestSink does Crow::Sink {
         'Cannot have an explicit sink and a replyable connection';
 }
 
+my class BlockableTestMessage does Crow::Message {
+    has Promise $.blocker .= new;
+    has Str $.body;
+}
+my class BlockableTestConnection does Crow::Connection does Crow::Replyable {
+    has Supplier $.send .= new;
+    has Supplier $!replier .= new;
+    method receive() { $!replier.Supply }
+
+    method produces() { BlockableTestMessage }
+    method incoming() { $!send.Supply }
+
+    method replier() {
+        class :: does Crow::Sink {
+            has $.replier;
+            method consumes() { TestMessage }
+            method sinker($input) {
+                supply {
+                    whenever $input {
+                        $!replier.emit(.body);
+                        LAST $!replier.emit('(closed)');
+                    }
+                }
+            }
+        }.new(:$!replier)
+    }
+}
+my class BlockableTestConnectionSource does Crow::Source {
+    has Supplier $.connection-injection .= new;
+    method produces() { BlockableTestConnection }
+    method incoming() {
+        $!connection-injection.Supply
+    }
+}
+my class BlockingTransform does Crow::Transform {
+    method consumes() { BlockableTestMessage }
+    method produces() { BlockableTestMessage }
+    method transformer($input) {
+        supply {
+            whenever $input {
+                await .blocker;
+                emit BlockableTestMessage.new(body => .body.uc)
+            }
+        }
+    }
+}
+
+{
+    my $conn-source = BlockableTestConnectionSource.new();
+    my $service = Crow.compose($conn-source, BlockingTransform);
+    $service.start;
+
+    my $conn-a = BlockableTestConnection.new;
+    $conn-source.connection-injection.emit($conn-a);
+    my $response-channel-a = $conn-a.receive.Channel;
+    my $msg-a = BlockableTestMessage.new(body => 'jalfrezi');
+    start $conn-a.send.emit($msg-a); # Simulate packet deliver on thread pool
+
+    my $conn-b = BlockableTestConnection.new;
+    $conn-source.connection-injection.emit($conn-b);
+    my $response-channel-b = $conn-b.receive.Channel;
+    my $msg-b = BlockableTestMessage.new(body => 'madras');
+    start $conn-b.send.emit($msg-b); # Simulate packet deliver on thread pool
+
+    nok $response-channel-a.poll, 'Reply on first connection not yet (sanity)';
+    nok $response-channel-b.poll, 'Reply on second connection not yet (sanity)';
+
+    $msg-b.blocker.keep(True);
+    is $response-channel-b.receive, 'MADRAS',
+        'After unblock of second connection, message received, even if first still blocked';
+    $conn-b.send.done;
+    is $response-channel-b.receive, '(closed)',
+        'Can close second connection even if first still blocking';
+
+    $msg-a.blocker.keep(True);
+    is $response-channel-a.receive, 'JALFREZI',
+        'After unblock of first connection, message received';
+    $conn-a.send.done;
+    is $response-channel-a.receive, '(closed)',
+        'Can close first connection too';
+}
+
 done-testing;
