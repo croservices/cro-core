@@ -1,3 +1,4 @@
+use Crow;
 use Crow::TCP;
 use Test;
 
@@ -93,10 +94,58 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     $fake-replies.emit(Crow::TCP::Message.new(data => 'Second reply'.encode('utf-8')));
     is $client-received.receive.decode('utf-8'), 'Second reply',
         'Second TCP::Message reply sent successfully';
+
+    $client-conn.close;
+    $tap.close;
 }
 
-# Crow::TCP::Client
+{
+    my class UppercaseTransform does Crow::Transform {
+        method consumes() { Crow::TCP::Message }
+        method produces() { Crow::TCP::Message }
+        method transformer($incoming) {
+            supply {
+                whenever $incoming -> $message {
+                    $message.data = $message.data.decode('latin-1').uc.encode('latin-1');
+                    emit $message;
+                }
+            }
+        }
+    }
 
-# Crow::TCP::Server
+    my $listener = Crow::TCP::Listener.new(port => TEST_PORT);
+    my $loud-service = Crow.compose($listener, UppercaseTransform);
+    isa-ok $loud-service, Crow::Service,
+        'TCP::Listener and a transform compose to make a service';
+    lives-ok { $loud-service.start }, 'Can start the service';
+
+    my $client-conn-a = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-received-a = Channel.new;
+    $client-conn-a.Supply(:bin).tap({ $client-received-a.send($_) });
+    $client-conn-a.print("Can you hear me?");
+    is $client-received-a.receive.decode('latin-1'), "CAN YOU HEAR ME?",
+        'Service processes messages (first connection)';
+
+    my $client-conn-b = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-received-b = Channel.new;
+    $client-conn-b.Supply(:bin).tap({ $client-received-b.send($_) });
+    $client-conn-b.print("I'm over here!");
+    is $client-received-b.receive.decode('latin-1'), "I'M OVER HERE!",
+        'Service processes messages (second concurrent connection)';
+
+    $client-conn-a.print("No, not there...");
+    is $client-received-a.receive.decode('latin-1'), "NO, NOT THERE...",
+        'Further messages on first connection processed';
+    $client-conn-a.close;
+
+    $client-conn-b.print("Bah, you suck at this");
+    is $client-received-b.receive.decode('latin-1'), "BAH, YOU SUCK AT THIS",
+        'Second connection fine after first closed';
+    $client-conn-b.close;
+
+    lives-ok { $loud-service.stop }, 'Can stop the service';
+    dies-ok { await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+        'Cannot connect to service after it has been stopped';
+}
 
 done-testing;
