@@ -571,4 +571,61 @@ my class NonReplyableTestConnectionSource does Crow::Source {
         'Connection manager cannot be formed if there is no sink';
 }
 
+my class CollectingTestSink does Crow::Sink {
+    has $.messages = Channel.new;
+    method consumes() { TestMessage }
+    method sinker(Supply:D $in) returns Supply:D {
+        supply {
+            whenever $in -> $message {
+                $!messages.send($message.body);
+                LAST $!messages.send('(closed)');
+            }
+        }
+    }
+}
+
+{
+    my $conn-source = NonReplyableTestConnectionSource.new();
+    my $sink = CollectingTestSink.new;
+    my $service = Crow.compose($conn-source, $sink);
+    isa-ok $service, Crow::Service,
+        'Connection source and sink make a Crow::Service';
+    lives-ok { $service.start },
+        'Could start service involving connection manager and explicit sink';
+
+    my $conn = NonReplyableTestConnection.new;
+    $conn-source.connection-injection.emit($conn);
+    $conn.send.emit(TestMessage.new(body => 'auto'));
+    is $sink.messages.receive, 'auto',
+        'First message of connection received by sink';
+    $conn.send.emit(TestMessage.new(body => 'kolo'));
+    is $sink.messages.receive, 'kolo',
+        'Second message of connection received by sink';
+    $conn.send.done;
+    is $sink.messages.receive, '(closed)',
+        'Connection close communicated to sink';
+}
+
+{
+    my $conn-source = NonReplyableTestConnectionSource.new();
+    my $sink = CollectingTestSink.new;
+    my $service = Crow.compose($conn-source, TestUppercaseTransform, $sink);
+    isa-ok $service, Crow::Service,
+        'Connection source, transform, and sink make a Crow::Service';
+    lives-ok { $service.start },
+        'Could start service involving connection manager, transform, and explicit sink';
+
+    my $conn = NonReplyableTestConnection.new;
+    $conn-source.connection-injection.emit($conn);
+    $conn.send.emit(TestMessage.new(body => 'auto'));
+    is $sink.messages.receive, 'AUTO',
+        'First message of connection received by sink';
+    $conn.send.emit(TestMessage.new(body => 'kolo'));
+    is $sink.messages.receive, 'KOLO',
+        'Second message of connection received by sink';
+    $conn.send.done;
+    is $sink.messages.receive, '(closed)',
+        'Connection close communicated to sink';
+}
+
 done-testing;
