@@ -551,4 +551,24 @@ my class TestUppercaseTransform does Crow::Transform {
         'Connection close communicated to sink';
 }
 
+my class NonReplyableTestConnection does Crow::Connection {
+    has Supplier $.send .= new;
+    method produces() { TestMessage }
+    method incoming() { $!send.Supply }
+}
+my class NonReplyableTestConnectionSource does Crow::Source {
+    has Supplier $.connection-injection .= new;
+    method produces() { NonReplyableTestConnection }
+    method incoming() {
+        $!connection-injection.Supply
+    }
+}
+
+{
+    my $conn-source = NonReplyableTestConnectionSource.new();
+    throws-like { Crow.compose($conn-source, TestUppercaseTransform) },
+        X::Crow::ConnectionManager::Misuse,
+        'Connection manager cannot be formed if there is no sink';
+}
+
 done-testing;
