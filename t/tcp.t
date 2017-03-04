@@ -16,32 +16,32 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
 {
     my $lis = Crow::TCP::Listener.new(port => TEST_PORT);
     is $lis.port, TEST_PORT, 'Listener has correct port';
-    dies-ok { await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+    dies-ok { await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Not listening simply by creating the object';
 
     my $incoming = $lis.incoming;
     ok $incoming ~~ Supply, 'incoming returns a Supply';
-    dies-ok { await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+    dies-ok { await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Still not listening as Supply not yet tapped';
 
     my $server-conns = Channel.new;
     my $tap = $incoming.tap({ $server-conns.send($_) });
     my $client-conn-a;
-    lives-ok { $client-conn-a = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+    lives-ok { $client-conn-a = await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Listening for connections once the Supply is tapped';
     ok $server-conns.receive ~~ Crow::TCP::Connection,
         'Listener emitted a TCP connection';
     nok $server-conns.poll, 'Only that one connection emitted';
     $client-conn-a.close;
 
-    my $client-conn-b = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-conn-b = await IO::Socket::Async.connect('localhost', TEST_PORT);
     ok $server-conns.receive ~~ Crow::TCP::Connection,
         'Listener emitted second connection';
     nok $server-conns.poll, 'Only that one connection emitted';
     $client-conn-b.close;
 
     $tap.close;
-    dies-ok { await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+    dies-ok { await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Not listening after Supply tap closed';
 }
 
@@ -50,7 +50,7 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     my $lis = Crow::TCP::Listener.new(port => TEST_PORT);
     my $server-conns = Channel.new;
     my $tap = $lis.incoming.tap({ $server-conns.send($_) });
-    my $client-conn = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-conn = await IO::Socket::Async.connect('localhost', TEST_PORT);
     my $client-received = Channel.new;
     $client-conn.Supply(:bin).tap({ $client-received.send($_) });
     my $server-conn = $server-conns.receive;
@@ -119,14 +119,14 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
         'TCP::Listener and a transform compose to make a service';
     lives-ok { $loud-service.start }, 'Can start the service';
 
-    my $client-conn-a = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-conn-a = await IO::Socket::Async.connect('localhost', TEST_PORT);
     my $client-received-a = Channel.new;
     $client-conn-a.Supply(:bin).tap({ $client-received-a.send($_) });
     $client-conn-a.print("Can you hear me?");
     is $client-received-a.receive.decode('latin-1'), "CAN YOU HEAR ME?",
         'Service processes messages (first connection)';
 
-    my $client-conn-b = await IO::Socket::Async.connect('127.0.0.1', TEST_PORT);
+    my $client-conn-b = await IO::Socket::Async.connect('localhost', TEST_PORT);
     my $client-received-b = Channel.new;
     $client-conn-b.Supply(:bin).tap({ $client-received-b.send($_) });
     $client-conn-b.print("I'm over here!");
@@ -144,7 +144,7 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     $client-conn-b.close;
 
     lives-ok { $loud-service.stop }, 'Can stop the service';
-    dies-ok { await IO::Socket::Async.connect('127.0.0.1', TEST_PORT) },
+    dies-ok { await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Cannot connect to service after it has been stopped';
 }
 
