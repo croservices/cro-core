@@ -173,7 +173,7 @@ throws-like { Crow.compose(TestSink, TestMessageSource) },
 {
     my $sink = TestSink.new;
     my $comp = Crow.compose(TestMessageSource, TestTransform, AnotherTestTransform, $sink);
-    isa-ok $comp, Crow::Service, 'Composing source/transform/sink gives a Crow::Service';
+    ok $comp ~~ Crow::Service, 'Composing source/transform/sink gives a Crow::Service';
     $comp.start();
     is $sink.sum, 13, 'Starting service processes all messages';
 }
@@ -239,7 +239,7 @@ class TestReplyableSourceWithSink does Crow::Source does Crow::Replyable {
 {
     my $test-reply-source = TestReplyableSourceWithSink.new();
     my $comp = Crow.compose($test-reply-source, TestTransform, AnotherTestTransform);
-    isa-ok $comp, Crow::Service,
+    ok $comp ~~ Crow::Service,
         'Composing source+transforms with sink from replyable source gives a Crow::Service';
     $comp.start();
     is $test-reply-source.sinker.sum, 14,
@@ -328,7 +328,7 @@ class TestReplyableTransform does Crow::Transform does Crow::Replyable {
 {
     my $test-reply-source = TestReplyableSourceWithSink.new();
     my $comp = Crow.compose($test-reply-source, TestReplyableTransform);
-    isa-ok $comp, Crow::Service,
+    ok $comp ~~ Crow::Service,
         'Source replyable (sink) + transform replyable (transform) gives Crow::Service';
     $comp.start();
     is $test-reply-source.sinker.sum, 14,
@@ -497,7 +497,7 @@ my class TestUppercaseTransform does Crow::Transform {
 {
     my $conn-source = TestConnectionSource.new();
     my $service = Crow.compose($conn-source, TestUppercaseTransform);
-    isa-ok $service, Crow::Service,
+    ok $service ~~ Crow::Service,
         'Connection source with replyable connection and transform makes a Crow::Service';
     lives-ok { $service.start },
         'Could start service involving connection manager';
@@ -532,7 +532,7 @@ my class TestUppercaseTransform does Crow::Transform {
 {
     my $conn-source = TestConnectionSource.new();
     my $service = Crow.compose($conn-source);
-    isa-ok $service, Crow::Service,
+    ok $service ~~ Crow::Service,
         'Connection source with replyable connection makes a Crow::Service';
     lives-ok { $service.start },
         'Could start identity service involving connection manager';
@@ -588,7 +588,7 @@ my class CollectingTestSink does Crow::Sink {
     my $conn-source = NonReplyableTestConnectionSource.new();
     my $sink = CollectingTestSink.new;
     my $service = Crow.compose($conn-source, $sink);
-    isa-ok $service, Crow::Service,
+    ok $service ~~ Crow::Service,
         'Connection source and sink make a Crow::Service';
     lives-ok { $service.start },
         'Could start service involving connection manager and explicit sink';
@@ -610,7 +610,7 @@ my class CollectingTestSink does Crow::Sink {
     my $conn-source = NonReplyableTestConnectionSource.new();
     my $sink = CollectingTestSink.new;
     my $service = Crow.compose($conn-source, TestUppercaseTransform, $sink);
-    isa-ok $service, Crow::Service,
+    ok $service ~~ Crow::Service,
         'Connection source, transform, and sink make a Crow::Service';
     lives-ok { $service.start },
         'Could start service involving connection manager, transform, and explicit sink';

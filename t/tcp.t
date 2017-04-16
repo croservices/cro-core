@@ -115,7 +115,7 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
 
     my $listener = Crow::TCP::Listener.new(port => TEST_PORT);
     my $loud-service = Crow.compose($listener, UppercaseTransform);
-    isa-ok $loud-service, Crow::Service,
+    ok $loud-service ~~ Crow::Service,
         'TCP::Listener and a transform compose to make a service';
     lives-ok { $loud-service.start }, 'Can start the service';
 
