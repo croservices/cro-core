@@ -6,10 +6,10 @@ constant TEST_PORT = 31313;
 
 # Type relationships.
 ok Crow::TCP::Listener ~~ Crow::Source, 'TCP listener is a source';
-ok Crow::TCP::Listener.produces ~~ Crow::TCP::Connection, 'TCP listener produces connections';
-ok Crow::TCP::Connection ~~ Crow::Connection, 'TCP connection is a connection';
-ok Crow::TCP::Connection ~~ Crow::Replyable, 'TCP connection is replyable';
-ok Crow::TCP::Connection.produces ~~ Crow::TCP::Message, 'TCP connection produces TCP messages';
+ok Crow::TCP::Listener.produces ~~ Crow::TCP::ServerConnection, 'TCP listener produces connections';
+ok Crow::TCP::ServerConnection ~~ Crow::Connection, 'TCP connection is a connection';
+ok Crow::TCP::ServerConnection ~~ Crow::Replyable, 'TCP connection is replyable';
+ok Crow::TCP::ServerConnection.produces ~~ Crow::TCP::Message, 'TCP connection produces TCP messages';
 ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
 
 # Crow::TCP::Listener
@@ -29,13 +29,13 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     my $client-conn-a;
     lives-ok { $client-conn-a = await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Listening for connections once the Supply is tapped';
-    ok $server-conns.receive ~~ Crow::TCP::Connection,
+    ok $server-conns.receive ~~ Crow::TCP::ServerConnection,
         'Listener emitted a TCP connection';
     nok $server-conns.poll, 'Only that one connection emitted';
     $client-conn-a.close;
 
     my $client-conn-b = await IO::Socket::Async.connect('localhost', TEST_PORT);
-    ok $server-conns.receive ~~ Crow::TCP::Connection,
+    ok $server-conns.receive ~~ Crow::TCP::ServerConnection,
         'Listener emitted second connection';
     nok $server-conns.poll, 'Only that one connection emitted';
     $client-conn-b.close;
@@ -45,7 +45,7 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
         'Not listening after Supply tap closed';
 }
 
-# Crow::TCP::Connection and Crow::TCP::Message
+# Crow::TCP::ServerConnection and Crow::TCP::Message
 {
     my $lis = Crow::TCP::Listener.new(port => TEST_PORT);
     my $server-conns = Channel.new;
