@@ -11,6 +11,9 @@ ok Crow::TCP::ServerConnection ~~ Crow::Connection, 'TCP connection is a connect
 ok Crow::TCP::ServerConnection ~~ Crow::Replyable, 'TCP connection is replyable';
 ok Crow::TCP::ServerConnection.produces ~~ Crow::TCP::Message, 'TCP connection produces TCP messages';
 ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
+ok Crow::TCP::Connector ~~ Crow::Connector, 'TCP connector is a connector';
+ok Crow::TCP::Connector.consumes ~~ Crow::TCP::Message, 'TCP connector consumes TCP messages';
+ok Crow::TCP::Connector.produces ~~ Crow::TCP::Message, 'TCP connector produces TCP messages';
 
 # Crow::TCP::Listener
 {
@@ -99,20 +102,20 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     $tap.close;
 }
 
-{
-    my class UppercaseTransform does Crow::Transform {
-        method consumes() { Crow::TCP::Message }
-        method produces() { Crow::TCP::Message }
-        method transformer($incoming) {
-            supply {
-                whenever $incoming -> $message {
-                    $message.data = $message.data.decode('latin-1').uc.encode('latin-1');
-                    emit $message;
-                }
+my class UppercaseTransform does Crow::Transform {
+    method consumes() { Crow::TCP::Message }
+    method produces() { Crow::TCP::Message }
+    method transformer($incoming) {
+        supply {
+            whenever $incoming -> $message {
+                $message.data = $message.data.decode('latin-1').uc.encode('latin-1');
+                emit $message;
             }
         }
     }
+}
 
+{
     my $listener = Crow::TCP::Listener.new(port => TEST_PORT);
     my $loud-service = Crow.compose($listener, UppercaseTransform);
     ok $loud-service ~~ Crow::Service,
@@ -146,6 +149,40 @@ ok Crow::TCP::Message ~~ Crow::Message, 'TCP message is a message';
     lives-ok { $loud-service.stop }, 'Can stop the service';
     dies-ok { await IO::Socket::Async.connect('localhost', TEST_PORT) },
         'Cannot connect to service after it has been stopped';
+}
+
+{
+    my $source = supply { emit Crow::TCP::Message.new( :data('bbq'.encode('ascii')) ) }
+    dies-ok
+        {
+            react {
+                whenever Crow::TCP::Connector.establish(port => TEST_PORT, $source) {}
+            }
+        },
+        'Establishing connection dies before service is started';
+
+    my $listener = Crow::TCP::Listener.new(port => TEST_PORT);
+    my $loud-service = Crow.compose($listener, UppercaseTransform);
+    $loud-service.start;
+
+    my $responses = Crow::TCP::Connector.establish(port => TEST_PORT, $source);
+    ok $responses ~~ Supply, 'Connector establish method returns a Supply';
+    react {
+        whenever $responses -> $message {
+            ok $message ~~ Crow::TCP::Message, 'Response supply emits a TCP message';
+            is $message.data.decode('ascii'), 'BBQ', 'Response had correct data';
+            done;
+        }
+    }
+
+    $loud-service.stop;
+    dies-ok
+        {
+            react {
+                whenever Crow::TCP::Connector.establish(port => TEST_PORT, $source) {}
+            }
+        },
+        'Establishing connection dies once service is stopped';
 }
 
 done-testing;
