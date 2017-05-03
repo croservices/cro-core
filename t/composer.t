@@ -1,4 +1,5 @@
 use Crow;
+use Crow::Connector;
 use Crow::Message;
 use Crow::Replyable;
 use Crow::Sink;
@@ -716,5 +717,52 @@ my class BlockingTransform does Crow::Transform {
     is $response-channel-a.receive, '(closed)',
         'Can close first connection too';
 }
+
+my class TestConnector does Crow::Connector {
+    class Transform does Crow::Transform {
+        has $.prepend;
+
+        method consumes() { TestMessage }
+        method produces() { TestMessage }
+
+        method transformer(Supply $incoming) {
+            supply {
+                whenever $incoming {
+                    emit TestMessage.new(body => $!prepend ~ .body);
+                }
+            }
+        }
+    }
+
+    method consumes() { TestMessage }
+    method produces() { TestMessage }
+    method connect(*%options) {
+        start Transform.new(prepend => %options<prepend>)
+    }
+}
+
+{
+    my $comp = Crow.compose(TestConnector);
+    ok $comp ~~ Crow::Connector, 'Composing just a connector produces a Crow::Connector';
+    ok $comp ~~ Crow::CompositeConnector, 'More specifically, a Crow::CompositeConnector';
+    is $comp.consumes, TestMessage, 'Composite connector has correct consumes';
+    is $comp.produces, TestMessage, 'Composite connector has correct produces';
+
+    my $in = supply { emit TestMessage.new(body => 'interested') }
+    my $output = $comp.establish($in, prepend => 'un');
+    isa-ok $output, Supply, 'Get a Supply back from composite connector';
+    my @messages = $output.list;
+    is @messages.elems, 1, 'Get a single message out';
+    ok @messages[0] ~~ TestMessage, 'That message is a TestMessage';
+    is @messages[0].body, 'uninterested',
+        'Correct message, implying correct connect options were passed';
+}
+
+throws-like { Crow.compose(TestConnector, TestConnector) },
+    X::Crow::Compose::OnlyOneConnector;
+throws-like { Crow.compose(TestMessageSource, TestConnector) },
+    X::Crow::Compose::SourceAndConnector;
+throws-like { Crow.compose(TestConnector, CollectingTestSink) },
+    X::Crow::Compose::SinkAndConnector;
 
 done-testing;
