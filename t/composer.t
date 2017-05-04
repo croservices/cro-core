@@ -765,4 +765,21 @@ throws-like { Crow.compose(TestMessageSource, TestConnector) },
 throws-like { Crow.compose(TestConnector, CollectingTestSink) },
     X::Crow::Compose::SinkAndConnector;
 
+{
+    my $comp = Crow.compose(TestUppercaseTransform, TestConnector, TestTransform);
+    ok $comp ~~ Crow::Connector, 'Connector with transform each side makes a Crow::Connector';
+    ok $comp ~~ Crow::CompositeConnector, 'More specifically, a Crow::CompositeConnector';
+    is $comp.consumes, TestMessage, 'Composite connector has correct consumes';
+    is $comp.produces, TestBinaryMessage, 'Composite connector has correct produces';
+
+    my $in = supply { emit TestMessage.new(body => 'complete') }
+    my $output = $comp.establish($in, prepend => 'in');
+    isa-ok $output, Supply, 'Get a Supply back from composite connector';
+    my @messages = $output.list;
+    is @messages.elems, 1, 'Get a single message out';
+    ok @messages[0] ~~ TestBinaryMessage, 'That message is a TestBinaryMessage';
+    is @messages[0].body.decode('utf-8'), 'inCOMPLETE',
+        'Correct message, implying correct options passing and correct transforms';
+}
+
 done-testing;
