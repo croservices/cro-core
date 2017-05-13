@@ -41,6 +41,27 @@ parses 'text/plain; charset=UTF-8', 'text/plain media type with charset', {
     is .Str, 'text/plain', 'Stringifies correctly';
 };
 
+parses 'text/plain; charset="UTF-8"', 'text/plain media type with charset quoted', {
+    is .type, 'text', 'Correct type';
+    is .subtype, 'plain', 'Correct subtype';
+    is .subtype-name, 'plain', 'Correct subtype name';
+    is .tree, '', 'No tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, ('charset' => 'UTF-8',), 'Correct parameter';
+    is .Str, 'text/plain', 'Stringifies correctly';
+};
+
+parses 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Parameters with escape', {
+    is .type, 'application', 'Correct type';
+    is .subtype, 'vnd.foobar', 'Correct subtype';
+    is .subtype-name, 'foobar', 'Correct subtype name';
+    is .tree, 'vnd', 'Correct tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, ('foo' => 'bar"d', 'baz' => '"'),
+        'Correct parameters';
+    is .Str, 'application/vnd.foobar', 'Stringifies correctly';
+};
+
 refuses 'text', 'No /subtype';
 refuses 'text', 'No subtype';
 refuses 'x{y}/plain', 'Bad chars in type';
