@@ -31,6 +31,16 @@ parses 'application/vnd.foobar+json', 'Vendor media type with suffix', {
     is .Str, 'application/vnd.foobar+json', 'Stringifies correctly';
 };
 
+parses 'text/plain; charset=UTF-8', 'text/plain media type with charset', {
+    is .type, 'text', 'Correct type';
+    is .subtype, 'plain', 'Correct subtype';
+    is .subtype-name, 'plain', 'Correct subtype name';
+    is .tree, '', 'No tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, ('charset' => 'UTF-8',), 'Correct parameter';
+    is .Str, 'text/plain', 'Stringifies correctly';
+};
+
 refuses 'text', 'No /subtype';
 refuses 'text', 'No subtype';
 refuses 'x{y}/plain', 'Bad chars in type';
