@@ -38,7 +38,7 @@ parses 'text/plain; charset=UTF-8', 'text/plain media type with charset', {
     is .tree, '', 'No tree';
     is .suffix, '', 'No suffix';
     is-deeply .parameters.List, ('charset' => 'UTF-8',), 'Correct parameter';
-    is .Str, 'text/plain', 'Stringifies correctly';
+    is .Str, 'text/plain; charset=UTF-8', 'Stringifies correctly';
 };
 
 parses 'text/plain; charset="UTF-8"', 'text/plain media type with charset quoted', {
@@ -48,7 +48,7 @@ parses 'text/plain; charset="UTF-8"', 'text/plain media type with charset quoted
     is .tree, '', 'No tree';
     is .suffix, '', 'No suffix';
     is-deeply .parameters.List, ('charset' => 'UTF-8',), 'Correct parameter';
-    is .Str, 'text/plain', 'Stringifies correctly';
+    is .Str, 'text/plain; charset=UTF-8', 'Stringifies correctly';
 };
 
 parses 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Parameters with escape', {
@@ -59,7 +59,7 @@ parses 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Parameters with escape
     is .suffix, '', 'No suffix';
     is-deeply .parameters.List, ('foo' => 'bar"d', 'baz' => '"'),
         'Correct parameters';
-    is .Str, 'application/vnd.foobar', 'Stringifies correctly';
+    is .Str, 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Stringifies correctly';
 };
 
 refuses 'text', 'No /subtype';
