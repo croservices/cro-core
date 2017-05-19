@@ -1,14 +1,14 @@
-use Crow::MediaType;
+use Cro::MediaType;
 use Test;
 
 sub parses($media-type, $desc, &checks) {
     my $parsed;
-    lives-ok { $parsed = Crow::MediaType.parse($media-type) }, $desc;
+    lives-ok { $parsed = Cro::MediaType.parse($media-type) }, $desc;
     checks($parsed) if $parsed;
 }
 
 sub refuses($media-type, $desc) {
-    dies-ok { Crow::MediaType.parse($media-type) }, $desc;
+    dies-ok { Cro::MediaType.parse($media-type) }, $desc;
 }
 
 parses 'text/plain', 'Simple text/plain media type', {

@@ -1,8 +1,8 @@
-use Crow::Uri;
+use Cro::Uri;
 use Test;
 
 sub parses($desc, $uri, *@checks) {
-    with try Crow::Uri.parse($uri) -> $parsed {
+    with try Cro::Uri.parse($uri) -> $parsed {
         pass $desc;
         for @checks.kv -> $i, $check {
             ok $check($parsed), "Check {$i + 1}";
@@ -16,11 +16,11 @@ sub parses($desc, $uri, *@checks) {
 }
 
 sub refuses($desc, $uri) {
-    with try Crow::Uri.parse($uri) {
+    with try Cro::Uri.parse($uri) {
         diag "Incorrectly parsed $uri";
         flunk $desc;
     }
-    elsif $! ~~ X::Crow::Uri::ParseError {
+    elsif $! ~~ X::Cro::Uri::ParseError {
         pass $desc;
     }
     else {
@@ -145,7 +145,7 @@ parses 'Authority parsed into host and port',
     *.scheme eq 'foo',
     *.authority eq 'example.com:8080',
     *.host eq 'example.com',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     *.port == 8080,
     !*.userinfo.defined;
 
@@ -155,7 +155,7 @@ for <127.0.0.1 8.8.8.8 65.2.137.99 255.255.255.255 0.0.0.0> -> $ipv4 {
         *.scheme eq 'foo',
         *.authority eq "{$ipv4}:8080",
         *.host eq $ipv4,
-        *.host-class == Crow::Uri::Host::IPv4,
+        *.host-class == Cro::Uri::Host::IPv4,
         *.port == 8080,
         !*.userinfo.defined;
 }
@@ -166,7 +166,7 @@ for <312.27.1.2 1.2.3.256 af.de.bc.11> -> $not-ipv4 {
         *.scheme eq 'foo',
         *.authority eq "{$not-ipv4}:8080",
         *.host eq $not-ipv4,
-        *.host-class == Crow::Uri::Host::RegName,
+        *.host-class == Cro::Uri::Host::RegName,
         *.port == 8080,
         !*.userinfo.defined;
 }
@@ -180,7 +180,7 @@ for <1080:0:0:0:8:800:200C:417A FF01:0:0:0:0:0:0:101 0:0:0:0:0:0:0:1
         *.scheme eq 'foo',
         *.authority eq "[{$ipv6}]:8080",
         *.host eq $ipv6,
-        *.host-class == Crow::Uri::Host::IPv6,
+        *.host-class == Cro::Uri::Host::IPv6,
         *.port == 8080,
         !*.userinfo.defined;
 }
@@ -195,7 +195,7 @@ for <v8.OMG v7.$!&'()*:;+,= vA2B.X_X-X.~Y vfe.xxx> -> $ipvfuture {
         *.scheme eq 'foo',
         *.authority eq "[{$ipvfuture}]:8080",
         *.host eq $ipvfuture,
-        *.host-class == Crow::Uri::Host::IPvFuture,
+        *.host-class == Cro::Uri::Host::IPvFuture,
         *.port == 8080,
         !*.userinfo.defined;
 }
@@ -209,7 +209,7 @@ parses 'Empty host name is allowed in generic URIs',
     *.scheme eq 'foo',
     *.authority eq ':8080',
     *.host eq '',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     *.port == 8080,
     !*.userinfo.defined;
 
@@ -218,7 +218,7 @@ parses 'Hostname can have unreserved and subdelims',
     *.scheme eq 'foo',
     *.authority eq Q{B-._a1!$&'()*+,;=~:8080},
     *.host eq Q{B-._a1!$&'()*+,;=~},
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     *.port == 8080,
     !*.userinfo.defined;
 
@@ -231,7 +231,7 @@ parses 'Percent-encoded things in reg-name',
     *.scheme eq 'foo',
     *.authority eq '%C3%80b.%E3%82%A2%E3%82%A2.com:8080',
     *.host eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com",
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     *.port == 8080,
     !*.userinfo.defined,
     *.path eq '/';
@@ -241,7 +241,7 @@ parses 'When no port, port is not defined',
     *.scheme eq 'foo',
     *.authority eq 'example.com',
     *.host eq 'example.com',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     !*.port.defined,
     !*.userinfo.defined;
 
@@ -250,7 +250,7 @@ parses 'When empty port, port is not defined',
     *.scheme eq 'foo',
     *.authority eq 'example.com:',
     *.host eq 'example.com',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     !*.port.defined,
     !*.userinfo.defined;
 
@@ -259,7 +259,7 @@ parses 'Can parse userinfo on a reg-name',
     *.scheme eq 'ssh',
     *.authority eq 'jnthn@some.secret.host',
     *.host eq 'some.secret.host',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     !*.port.defined,
     *.userinfo eq 'jnthn',
     *.user eq 'jnthn',
@@ -270,7 +270,7 @@ parses 'Can parse userinfo on an IP address',
     *.scheme eq 'ssh',
     *.authority eq 'root@112.34.56.78',
     *.host eq '112.34.56.78',
-    *.host-class == Crow::Uri::Host::IPv4,
+    *.host-class == Cro::Uri::Host::IPv4,
     !*.port.defined,
     *.userinfo eq 'root',
     *.user eq 'root',
@@ -281,7 +281,7 @@ parses 'We split on the (deprecated, but in the RFC nonetheless, user:pass form)
     *.scheme eq 'foo',
     *.authority eq 'bob:s3cr3t@fbi.gov',
     *.host eq 'fbi.gov',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     !*.port.defined,
     *.userinfo eq 'bob:s3cr3t',
     *.user eq 'bob',
@@ -292,7 +292,7 @@ parses 'We can have unreserved and subdelims in userinfo',
     *.scheme eq 'foo',
     *.authority eq Q{B-._a1!$&':()*+,;=~@omg.url:8080},
     *.host eq 'omg.url',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     *.port == 8080,
     *.userinfo eq Q{B-._a1!$&':()*+,;=~},
     *.user eq Q{B-._a1!$&'},
@@ -307,7 +307,7 @@ parses 'Can decode %-encoded things in userinfo',
     *.scheme eq 'foo',
     *.authority eq '%C3%80b:%E3%82%A2%E3%82%A2@unicode.org',
     *.host eq 'unicode.org',
-    *.host-class == Crow::Uri::Host::RegName,
+    *.host-class == Cro::Uri::Host::RegName,
     !*.port.defined,
     *.userinfo eq '%C3%80b:%E3%82%A2%E3%82%A2',
     *.user eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b",
