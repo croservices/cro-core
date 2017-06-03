@@ -81,6 +81,10 @@ class Cro::MediaType {
             ($!suffix ?? "+$!suffix" !! "")
     }
 
+    method type-and-subtype() {
+        "$!type/$.subtype"
+    }
+
     multi method Str(Cro::MediaType:D:) {
         "$!type/$.subtype" ~ @!parameters.map(&param-str).join
     }
