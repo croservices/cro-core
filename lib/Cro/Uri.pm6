@@ -9,6 +9,7 @@ class X::Cro::Uri::ParseError is Exception {
 class Cro::Uri {
     enum Host <RegName IPv4 IPv6 IPvFuture>;
 
+    has Str $.origin;
     has Str $.scheme;
     has Str $.authority;
     has Str $.userinfo;
@@ -146,6 +147,7 @@ class Cro::Uri {
             my %parts = scheme => ~$<scheme>, |$<hier-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
+            %parts<origin> = ~$/;
             make Cro::Uri.bless(|%parts);
         }
 
@@ -264,16 +266,8 @@ class Cro::Uri {
         $no-leader.split('/').map(&decode-percents).list
     }
 
-    multi method Str(--> Str) {
-        my $path = $!scheme ~ ':';
-        $path ~= '//' if $!host;
-        $path ~= $!userinfo if $!userinfo;
-        $path ~= $!host if $!host;
-        $path ~= ':' ~ $!port if $!port;
-        $path ~= $!path if $!path;
-        $path ~= '?' ~ $!query if $!query;
-        $path ~= '#' ~ $!fragment if $!fragment;
-        $path
+    multi method Str(Cro::Uri:D: --> Str) {
+        $!origin
     }
 
 }

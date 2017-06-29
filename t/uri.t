@@ -29,6 +29,9 @@ sub refuses($desc, $uri) {
     }
 }
 
+my $long-name = 'abc://username:password@example.com:123/path/data?key=value&key2=value2#fragid1';
+is Cro::Uri.parse($long-name).Str, $long-name, '.Str method returns the original string';
+
 parses 'Simple URN',
     'urn:example:animal:ferret:nose',
     *.scheme eq 'urn',
