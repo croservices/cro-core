@@ -263,6 +263,19 @@ class Cro::Uri {
         my $no-leader = $!path.starts-with('/') ?? $!path.substr(1) !! $!path;
         $no-leader.split('/').map(&decode-percents).list
     }
+
+    multi method Str(--> Str) {
+        my $path = $!scheme ~ ':';
+        $path ~= '//' if $!host;
+        $path ~= $!userinfo if $!userinfo;
+        $path ~= $!host if $!host;
+        $path ~= ':' ~ $!port if $!port;
+        $path ~= $!path if $!path;
+        $path ~= '?' ~ $!query if $!query;
+        $path ~= '#' ~ $!fragment if $!fragment;
+        $path
+    }
+
 }
 
 sub decode-percents(Str $s) is export(:decode-percents) {
