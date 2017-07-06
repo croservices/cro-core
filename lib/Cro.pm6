@@ -230,7 +230,7 @@ class Cro::ConnectionManager does Cro::Sink {
             my $sink = $!sinker
                 ?? $!sinker.sinker($to-sink)
                 !! $connection.replier.sinker($to-sink);
-            $sink.tap; # XXX Error handling
+            $sink.tap: quit => { .note };
         }
     }
 }

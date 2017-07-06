@@ -3,7 +3,7 @@ role Cro::Service {
     has Tap $!service-tap;
 
     method start(--> Nil) {
-        $!service-tap = self!assemble-pipeline().tap();
+        $!service-tap = self!assemble-pipeline().tap: quit => { .note };
     }
 
     method !assemble-pipeline() {
