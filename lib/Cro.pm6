@@ -177,9 +177,9 @@ class Cro::ConnectionManager does Cro::Sink {
     has Cro::Transform $!transformer;
     has Cro::Sink $!sinker;
 
-    submethod BUILD(:$!connection-type, :@components, :$debug) {
+    submethod BUILD(:$!connection-type, :@components, :$debug, :$label) {
         if @components {
-            given Cro.compose(@components, :$debug) {
+            given Cro.compose(@components, :$debug, :$label) {
                 when Cro::Sink {
                     if $!connection-type ~~ Cro::Replyable {
                         die X::Cro::ConnectionManager::Misuse.new: message =>
@@ -236,6 +236,7 @@ class Cro::ConnectionManager does Cro::Sink {
 }
 
 class Cro::PipelineDebugTransform does Cro::Transform {
+    has $.label;
     has $.component;
     has $.consumes;
     has $.produces;
@@ -243,10 +244,10 @@ class Cro::PipelineDebugTransform does Cro::Transform {
     method transformer(Supply:D $in --> Supply) {
         supply {
             whenever $in -> \msg {
-                note "[DEBUG] $!component.^name() emitted {msg.perl()}";
+                note "[DEBUG($!label)] $!component.^name() emitted {msg.perl()}";
                 emit msg;
-                LAST { note "[DEBUG] $!component.^name() sent done"; }
-                QUIT { note "[DEBUG] $!component.^name() crashed: $_.gist()"; }
+                LAST { note "[DEBUG($!label)] $!component.^name() sent done"; }
+                QUIT { note "[DEBUG($!label)] $!component.^name() crashed: $_.gist()"; }
             }
         }
     }
@@ -255,8 +256,15 @@ class Cro::PipelineDebugTransform does Cro::Transform {
 class Cro {
     my subset ConnectionOrMessage where Cro::Message | Cro::Connection;
 
+    my $next-label-lock = Lock.new;
+    my $next-label = 1;
+    sub next-label() {
+        $next-label-lock.protect: { $next-label++ }
+    }
+
     my $debug-default = ?%*ENV<CRO_PIPELINE_DEBUG>;
-    method compose(*@components-in, Cro::Service :$service-type, :$debug = $debug-default) {
+    method compose(*@components-in, Cro::Service :$service-type, :$debug = $debug-default,
+            :$label = "anon &next-label()") {
         die X::Cro::Compose::Empty.new unless @components-in;
 
         # First scan through and see if we need to insert a connection
@@ -273,9 +281,9 @@ class Cro {
                         Cro::ConnectionManager.new(
                             connection-type => $comp.produces,
                             components => @components-in[$split..*],
-                            :$debug
+                            :$debug, :$label
                         ),
-                        :$debug;
+                        :$debug, :$label;
                 }
             }
         }
@@ -287,9 +295,9 @@ class Cro {
                         Cro::ConnectionManager.new(
                             connection-type => $comp.produces,
                             components => [],
-                            :$debug
+                            :$debug, :$label
                         ),
-                        :$debug;
+                        :$debug, :$label;
                 }
             }
         }
@@ -323,7 +331,7 @@ class Cro {
             push @components, $component;
             if $debug && $component !~~ Cro::Sink {
                 push @components, Cro::PipelineDebugTransform.new(
-                    :$component,
+                    :$component, :$label,
                     consumes => $component.produces,
                     produces => $component.produces
                 );
