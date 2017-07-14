@@ -177,9 +177,9 @@ class Cro::ConnectionManager does Cro::Sink {
     has Cro::Transform $!transformer;
     has Cro::Sink $!sinker;
 
-    submethod BUILD(:$!connection-type, :@components) {
+    submethod BUILD(:$!connection-type, :@components, :$debug) {
         if @components {
-            given Cro.compose(@components) {
+            given Cro.compose(@components, :$debug) {
                 when Cro::Sink {
                     if $!connection-type ~~ Cro::Replyable {
                         die X::Cro::ConnectionManager::Misuse.new: message =>
@@ -235,10 +235,21 @@ class Cro::ConnectionManager does Cro::Sink {
     }
 }
 
+class Cro::PipelineDebugTransform does Cro::Transform {
+    has $.component;
+    has $.consumes;
+    has $.produces;
+
+    method transformer(Supply:D $in --> Supply) {
+        $in.do: { note "[DEBUG] $!component.^name() emitted $_.perl()" }
+    }
+}
+
 class Cro {
     my subset ConnectionOrMessage where Cro::Message | Cro::Connection;
 
-    method compose(*@components-in, Cro::Service :$service-type) {
+    my $debug-default = ?%*ENV<CRO_PIPELINE_DEBUG>;
+    method compose(*@components-in, Cro::Service :$service-type, :$debug = $debug-default) {
         die X::Cro::Compose::Empty.new unless @components-in;
 
         # First scan through and see if we need to insert a connection
@@ -254,8 +265,10 @@ class Cro {
                         |@components-in[^$split],
                         Cro::ConnectionManager.new(
                             connection-type => $comp.produces,
-                            components => @components-in[$split..*]
-                        );
+                            components => @components-in[$split..*],
+                            :$debug
+                        ),
+                        :$debug;
                 }
             }
         }
@@ -266,8 +279,10 @@ class Cro {
                         |@components-in,
                         Cro::ConnectionManager.new(
                             connection-type => $comp.produces,
-                            components => []
-                        );
+                            components => [],
+                            :$debug
+                        ),
+                        :$debug;
                 }
             }
         }
@@ -297,13 +312,24 @@ class Cro {
             }
         }
 
+        sub push-component($component) {
+            push @components, $component;
+            if $debug && $component !~~ Cro::Sink {
+                push @components, Cro::PipelineDebugTransform.new(
+                    :$component,
+                    consumes => $component.produces,
+                    produces => $component.produces
+                );
+            }
+        }
+
         for @components-in.kv -> $i, $comp {
             if @repliers-to-insert {
                 my $replyable = @repliers-to-insert[0];
                 my $replier = $replyable.replier;
                 if $replier ~~ Cro::Transform && $replier.consumes === $expected {
                     shift @repliers-to-insert;
-                    push @components, $replier;
+                    push-component $replier;
                     $expected = $replier.produces;
                 }
             }
@@ -357,7 +383,7 @@ class Cro {
                 $expected = $comp.?produces;
             }
 
-            push @components, $comp;
+            push-component $comp;
         }
 
         for @repliers-to-insert -> $replyable {
@@ -372,7 +398,7 @@ class Cro {
                             consumer => $_
                         );
                     }
-                    push @components, $_;
+                    push-component $_;
                     $has-sink = True;
                 }
                 when Cro::Transform {
@@ -382,7 +408,7 @@ class Cro {
                             consumer => $_
                         );
                     }
-                    push @components, $_;
+                    push-component $_;
                     $expected = .produces;
                 }
             }
