@@ -172,6 +172,24 @@ class Cro::CompositeConnector does Cro::Connector {
     }
 }
 
+class Cro::PipelineDebugTransform does Cro::Transform {
+    has $.label;
+    has $.component;
+    has $.consumes;
+    has $.produces;
+
+    method transformer(Supply:D $in --> Supply) {
+        supply {
+            whenever $in -> \msg {
+                note "[DEBUG($!label)] $!component.^name() emitted {msg.perl()}";
+                emit msg;
+                LAST { note "[DEBUG($!label)] $!component.^name() sent done"; }
+                QUIT { note "[DEBUG($!label)] $!component.^name() crashed: $_.gist()"; }
+            }
+        }
+    }
+}
+
 class Cro::ConnectionManager does Cro::Sink {
     has Cro::Connection:U $!connection-type;
     has Cro::Transform $!transformer;
@@ -179,7 +197,15 @@ class Cro::ConnectionManager does Cro::Sink {
 
     submethod BUILD(:$!connection-type, :@components, :$debug, :$label) {
         if @components {
-            given Cro.compose(@components, :$debug, :$label) {
+            my @debug = $debug
+                ?? Cro::PipelineDebugTransform.new(
+                    component => $!connection-type,
+                    consumes => $!connection-type.produces,
+                    produces => $!connection-type.produces,
+                    :$label
+                  )
+                !! Empty;
+            given Cro.compose(|@debug, @components, :$debug, :$label) {
                 when Cro::Sink {
                     if $!connection-type ~~ Cro::Replyable {
                         die X::Cro::ConnectionManager::Misuse.new: message =>
@@ -231,24 +257,6 @@ class Cro::ConnectionManager does Cro::Sink {
                 ?? $!sinker.sinker($to-sink)
                 !! $connection.replier.sinker($to-sink);
             $sink.tap: quit => { .note };
-        }
-    }
-}
-
-class Cro::PipelineDebugTransform does Cro::Transform {
-    has $.label;
-    has $.component;
-    has $.consumes;
-    has $.produces;
-
-    method transformer(Supply:D $in --> Supply) {
-        supply {
-            whenever $in -> \msg {
-                note "[DEBUG($!label)] $!component.^name() emitted {msg.perl()}";
-                emit msg;
-                LAST { note "[DEBUG($!label)] $!component.^name() sent done"; }
-                QUIT { note "[DEBUG($!label)] $!component.^name() crashed: $_.gist()"; }
-            }
         }
     }
 }
@@ -329,7 +337,7 @@ class Cro {
 
         sub push-component($component) {
             push @components, $component;
-            if $debug && $component !~~ Cro::Sink {
+            if $debug && $component !~~ Cro::Sink && $component !~~ Cro::PipelineDebugTransform {
                 push @components, Cro::PipelineDebugTransform.new(
                     :$component, :$label,
                     consumes => $component.produces,
