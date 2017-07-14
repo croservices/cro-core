@@ -241,7 +241,14 @@ class Cro::PipelineDebugTransform does Cro::Transform {
     has $.produces;
 
     method transformer(Supply:D $in --> Supply) {
-        $in.do: { note "[DEBUG] $!component.^name() emitted $_.perl()" }
+        supply {
+            whenever $in -> \msg {
+                note "[DEBUG] $!component.^name() emitted {msg.perl()}";
+                emit msg;
+                LAST { note "[DEBUG] $!component.^name() sent done"; }
+                QUIT { note "[DEBUG] $!component.^name() crashed: $_.gist()"; }
+            }
+        }
     }
 }
 
