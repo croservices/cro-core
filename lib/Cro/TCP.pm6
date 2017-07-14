@@ -24,7 +24,7 @@ class Cro::TCP::Replier does Cro::Sink {
     method sinker(Supply:D $pipeline) returns Supply:D {
         supply {
             whenever $pipeline {
-                $!socket.write(.data);
+                whenever $!socket.write(.data) {}
                 LAST $!socket.close;
             }
         }
