@@ -209,7 +209,7 @@ class Cro::ConnectionManager does Cro::Sink {
                 when Cro::Sink {
                     if $!connection-type ~~ Cro::Replyable {
                         die X::Cro::ConnectionManager::Misuse.new: message =>
-                            "A connection manager was inserted before after " ~
+                            "A connection manager was inserted after " ~
                             "component {@components[0].^name}. The connection " ~
                             "type {$!connection-type.^name} is replyable, but " ~
                             "an explicit sink was also provided in the following " ~
