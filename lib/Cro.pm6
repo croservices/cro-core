@@ -270,7 +270,7 @@ class Cro {
         $next-label-lock.protect: { $next-label++ }
     }
 
-    my $debug-default = ?%*ENV<CRO_PIPELINE_DEBUG>;
+    my $debug-default = ?%*ENV<CRO_TRACE>;
     method compose(*@components-in, Cro::Service :$service-type, :$debug = $debug-default,
             :$label = "anon &next-label()") {
         die X::Cro::Compose::Empty.new unless @components-in;
