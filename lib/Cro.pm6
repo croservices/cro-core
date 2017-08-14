@@ -172,7 +172,7 @@ class Cro::CompositeConnector does Cro::Connector {
     }
 }
 
-class Cro::PipelineDebugTransform does Cro::Transform {
+class Cro::PipelineTraceTransform does Cro::Transform {
     has $.label;
     has $.component;
     has $.consumes;
@@ -181,10 +181,10 @@ class Cro::PipelineDebugTransform does Cro::Transform {
     method transformer(Supply:D $in --> Supply) {
         supply {
             whenever $in -> \msg {
-                note "[DEBUG($!label)] $!component.^name() emitted {msg.perl()}";
+                note "[TRACE($!label)] $!component.^name() emitted {msg.perl()}";
                 emit msg;
-                LAST { note "[DEBUG($!label)] $!component.^name() sent done"; }
-                QUIT { note "[DEBUG($!label)] $!component.^name() crashed: $_.gist()"; }
+                LAST { note "[TRACE($!label)] $!component.^name() sent done"; }
+                QUIT { note "[TRACE($!label)] $!component.^name() crashed: $_.gist()"; }
             }
         }
     }
@@ -198,7 +198,7 @@ class Cro::ConnectionManager does Cro::Sink {
     submethod BUILD(:$!connection-type, :@components, :$debug, :$label) {
         if @components {
             my @debug = $debug
-                ?? Cro::PipelineDebugTransform.new(
+                ?? Cro::PipelineTraceTransform.new(
                     component => $!connection-type,
                     consumes => $!connection-type.produces,
                     produces => $!connection-type.produces,
@@ -337,8 +337,8 @@ class Cro {
 
         sub push-component($component) {
             push @components, $component;
-            if $debug && $component !~~ Cro::Sink && $component !~~ Cro::PipelineDebugTransform {
-                push @components, Cro::PipelineDebugTransform.new(
+            if $debug && $component !~~ Cro::Sink && $component !~~ Cro::PipelineTraceTransform {
+                push @components, Cro::PipelineTraceTransform.new(
                     :$component, :$label,
                     consumes => $component.produces,
                     produces => $component.produces
