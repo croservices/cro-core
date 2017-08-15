@@ -181,10 +181,10 @@ class Cro::PipelineTraceTransform does Cro::Transform {
     method transformer(Supply:D $in --> Supply) {
         supply {
             whenever $in -> \msg {
-                note "[TRACE($!label)] $!component.^name() emitted {encode msg.perl}";
+                note "[TRACE($!label)] $!component.^name() EMIT {encode msg.perl}";
                 emit msg;
-                LAST { note "[TRACE($!label)] $!component.^name() done"; }
-                QUIT { note "[TRACE($!label)] $!component.^name() crashed {encode .gist}"; }
+                LAST { note "[TRACE($!label)] $!component.^name() DONE"; }
+                QUIT { note "[TRACE($!label)] $!component.^name() QUIT {encode .gist}"; }
             }
         }
     }
