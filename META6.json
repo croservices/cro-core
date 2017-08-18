@@ -1,0 +1,26 @@
+{
+    "perl"          : "6.*",
+    "name"          : "Cro::Core",
+    "version"       : "0.7",
+    "description"   : "Libraries for building reactive services in Perl 6 - core.",
+    "authors"       : [ "Jonathan Worthington <jnthn@jnthn.net>" ],
+    "license"       : "Artistic-2.0",
+    "depends"       : [ ],
+    "provides"      : {
+                "Cro": "lib/Cro.pm6",
+                "Cro::Connection": "lib/Cro/Connection.pm6",
+                "Cro::Connector": "lib/Cro/Connector.pm6",
+                "Cro::MediaType": "lib/Cro/MediaType.pm6",
+                "Cro::Message": "lib/Cro/Message.pm6",
+                "Cro::Replyable": "lib/Cro/Replyable.pm6",
+                "Cro::Service": "lib/Cro/Service.pm6",
+                "Cro::Sink": "lib/Cro/Sink.pm6",
+                "Cro::Source": "lib/Cro/Source.pm6",
+                "Cro::TCP": "lib/Cro/TCP.pm6",
+                "Cro::Transform": "lib/Cro/Transform.pm6",
+                "Cro::Types": "lib/Cro/Types.pm6",
+                "Cro::Uri": "lib/Cro/Uri.pm6"
+    },
+    "resources": [],
+    "source-url"    : "https://github.com/jnthn/cro-core.git"
+}
