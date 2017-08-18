@@ -35,6 +35,11 @@ class Cro::TCP::ServerConnection does Cro::Connection does Cro::Replyable {
     has $!socket;
     has $.replier;
 
+    method socket-host() { $!socket.socket-host }
+    method socket-port() { $!socket.socket-port }
+    method peer-host()   { $!socket.peer-host }
+    method peer-port()   { $!socket.peer-port }
+
     method produces() { Cro::TCP::Message }
 
     submethod BUILD(:$!socket!) {
