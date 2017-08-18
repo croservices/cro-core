@@ -8,6 +8,7 @@ use Cro::Types;
 
 class Cro::TCP::Message does Cro::Message {
     has Blob $.data is rw;
+    has $.connection;
 
     method gist(Cro::TCP::Message:D:) {
         "TCP Message\n  data = " ~ $!data.gist
@@ -49,7 +50,7 @@ class Cro::TCP::ServerConnection does Cro::Connection does Cro::Replyable {
     method incoming() {
         supply {
             whenever $!socket.Supply(:bin) -> $data {
-                emit Cro::TCP::Message.new(:$data);
+                emit Cro::TCP::Message.new(:$data, connection => $!socket);
             }
         }
     }
