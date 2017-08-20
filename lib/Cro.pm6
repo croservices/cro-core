@@ -88,6 +88,11 @@ class X::Cro::Compose::ConnectionConditionalWithoutConnector is Exception {
         "Can only use a Cro::ConnectionConditional in a pipeline with a connector"
     }
 }
+class X::Cro::Compose::ConnectionStateWithoutConnection is Exception {
+    method message() {
+        "Can only compose a component doing Cro::ConnectionState in the scope of a connection"
+    }
+}
 class X::Cro::ConnectionManager::Misuse is Exception {
     has $.message;
 }
@@ -271,7 +276,40 @@ class Cro::ConnectionConditional {
     }
 }
 
+role Cro::ConnectionState[::T] {
+    method connection-state-type() { T }
+}
+
 class Cro::CompositeConnector does Cro::Connector {
+    class Transform does Cro::Transform {
+        has @.components is required;
+
+        method consumes() { @!components.head.consumes }
+        method produces() { @!components.tail.produces }
+
+        method transformer(Supply:D $pipeline) returns Supply:D {
+            my $current = $pipeline;
+            my %connection-state{Mu};
+            for @!components -> $comp {
+                if $comp ~~ Cro::ConnectionState {
+                    my $cs-type = $comp.connection-state-type;
+                    with %connection-state{$cs-type} {
+                        $current = $comp.transformer($current, :connection-state($_));
+                    }
+                    else {
+                        my $cs = $cs-type.new;
+                        %connection-state{$cs-type} = $cs;
+                        $current = $comp.transformer($current, :connection-state($cs));
+                    }
+                }
+                else {
+                    $current = $comp.transformer($current);
+                }
+            }
+            return $current;
+        }
+    }
+
     has @!before;
     has $!conditional-before;
     has $!connector;
@@ -317,7 +355,7 @@ class Cro::CompositeConnector does Cro::Connector {
             my \after = $!conditional-after
                 ?? filter(@!after, $con-tran)
                 !! @!after;
-            Cro::CompositeTransform.new(components => flat(before, $con-tran, after))
+            Transform.new(components => flat(before, $con-tran, after))
         }
     }
 
@@ -474,6 +512,7 @@ class Cro {
         my $has-sink = False;
         my $has-connector = False;
         my $has-connection-conditional = False;
+        my $has-connection-state = False;
         my $expected;
         my @repliers-to-insert;
         my @components;
@@ -518,6 +557,10 @@ class Cro {
                     when Cro::Replyable {
                         check-and-add-replyable($_);
                     }
+                }
+                when Cro::ConnectionState {
+                    $has-connection-state = True;
+                    proceed;
                 }
                 when Cro::Transform {
                     validate-consumer($_);
@@ -595,6 +638,9 @@ class Cro {
 
         if $has-connection-conditional && !$has-connector {
             die X::Cro::Compose::ConnectionConditionalWithoutConnector.new;
+        }
+        if $has-connection-state && !$has-connector {
+            die X::Cro::Compose::ConnectionStateWithoutConnection.new;
         }
 
         if $has-connector {
