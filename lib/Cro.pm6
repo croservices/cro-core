@@ -83,8 +83,46 @@ class X::Cro::Compose::SinkAndConnector is Exception {
         "A pipeline with a connector may not also have a sink"
     }
 }
+class X::Cro::Compose::ConnectionConditionalWithoutConnector is Exception {
+    method message() {
+        "Can only use a Cro::ConnectionConditional in a pipeline with a connector"
+    }
+}
 class X::Cro::ConnectionManager::Misuse is Exception {
     has $.message;
+}
+class X::Cro::ConnectionConditional::NoAlternatives is Exception {
+    method message() {
+        "Must construct Cro::ConnectionConditional with at least a default option"
+    }
+}
+class X::Cro::ConnectionConditional::TransformOnly is Exception {
+    has $.got;
+    method message() {
+        "Cro::ConnectionConditional options must be Cro::Transform (or an array of those), " ~
+        "but got {$!got.^name}"
+    }
+}
+class X::Cro::ConnectionConditional::NoDefault is Exception {
+    method message() {
+        "Must construct Cro::ConnectionConditional with a default option, not just conditions"
+    }
+}
+class X::Cro::ConnectionConditional::MultipleDefaults is Exception {
+    method message() {
+        "Must not construct Cro::ConnectionConditional with multiple defaults"
+    }
+}
+class X::Cro::ConnectionConditional::Incompatible is Exception {
+    has $.consumes-a;
+    has $.produces-a;
+    has $.consumes-b;
+    has $.produces-b;
+    method message() {
+        "Conditional pipelines must have same input and output messages types, but saw " ~
+        "{$!consumes-a.^name} to {$!produces-a.^name} and " ~
+        "{$!consumes-b.^name} to {$!produces-b.^name}"
+    }
 }
 
 class Cro { ... }
@@ -135,10 +173,110 @@ class Cro::CompositeSink does Cro::Sink {
     }
 }
 
+class Cro::ConnectionConditional {
+    has $.consumes;
+    has $.produces;
+    has @.conditions;
+    has $.default;
+
+    method new(**@options) {
+        die X::Cro::ConnectionConditional::NoAlternatives.new unless @options;
+
+        my $consumes;
+        my $produces;
+        sub check-compatibility($con, $prod) {
+            state $first = True;
+            if $first {
+                $consumes = $con;
+                $produces = $prod;
+                $first = False;
+            }
+            else {
+                if $con !=== $consumes || $prod !=== $produces {
+                    die X::Cro::ConnectionConditional::Incompatible.new(
+                        consumes-a => $consumes, produces-a => $produces,
+                        consumes-b => $con, produces-b => $prod
+                    );
+                }
+            }
+        }
+
+        my $saw-default = False;
+        my @conditions;
+        my $default;
+        for @options {
+            when Pair {
+                check-compatibility(|check-and-get-endpoints(.value));
+                push @conditions, $_;
+            }
+            default {
+                if $saw-default {
+                    die X::Cro::ConnectionConditional::MultipleDefaults.new;
+                }
+                $saw-default = True;
+                check-compatibility(|check-and-get-endpoints($_));
+                $default = $_;
+            }
+        }
+        unless $saw-default {
+            die X::Cro::ConnectionConditional::NoDefault.new;
+        }
+
+        self.bless(:$consumes, :$produces, :@conditions, :$default)
+    }
+
+    multi sub check-and-get-endpoints(Cro::Transform $t) {
+        validate-transform($t);
+        return ($t.consumes, $t.produces)
+    }
+    multi sub check-and-get-endpoints(@transforms) {
+        my $expected;
+        for @transforms.kv -> $i, $t {
+            unless $t ~~ Cro::Transform {
+                die X::Cro::ConnectionConditional::TransformOnly.new(got => $t);
+            }
+            validate-transform($t);
+            if $i == 0 {
+                $expected = $t.produces;
+            }
+            elsif $t.consumes !=== $expected {
+                die X::Cro::Compose::Mismatch.new(
+                    producer => @transforms[$i - 1],
+                    consumer => $t
+                );
+            }
+            else {
+                $expected = $t.produces;
+            }
+        }
+        return (@transforms[0].consumes, @transforms[*-1].produces);
+    }
+    multi sub check-and-get-endpoints($got) {
+        die X::Cro::ConnectionConditional::TransformOnly.new(:$got)
+    }
+
+    sub validate-transform($t) {
+        validate-consumer($t);
+        validate-producer($t);
+    }
+
+    method consumes() { $!consumes }
+    method produces() { $!produces }
+
+    method select($data) {
+        for @!conditions {
+            return .value if .key()($data);
+        }
+        return $!default;
+    }
+}
+
 class Cro::CompositeConnector does Cro::Connector {
     has @!before;
+    has $!conditional-before;
     has $!connector;
     has @!after;
+    has $!conditional-after;
 
     submethod BUILD(:@components! --> Nil) {
         my $seen-connector = False;
@@ -149,9 +287,15 @@ class Cro::CompositeConnector does Cro::Connector {
             }
             when $seen-connector {
                 @!after.push($_);
+                when Cro::ConnectionConditional {
+                    $!conditional-after = True;
+                }
             }
             default {
                 @!before.push($_);
+                when Cro::ConnectionConditional {
+                    $!conditional-before = True;
+                }
             }
         }
     }
@@ -167,7 +311,21 @@ class Cro::CompositeConnector does Cro::Connector {
     method connect(*%options --> Promise) {
         start {
             my Cro::Transform $con-tran = await $!connector.connect(|%options);
-            Cro::CompositeTransform.new(components => flat(@!before, $con-tran, @!after))
+            my \before = $!conditional-before
+                ?? filter(@!before, $con-tran)
+                !! @!before;
+            my \after = $!conditional-after
+                ?? filter(@!after, $con-tran)
+                !! @!after;
+            Cro::CompositeTransform.new(components => flat(before, $con-tran, after))
+        }
+    }
+
+    sub filter(@components, $con-tran) {
+        @components.map: -> $c {
+            $c ~~ Cro::ConnectionConditional
+                ?? $c.select($con-tran).flat
+                !! $c
         }
     }
 }
@@ -266,8 +424,6 @@ class Cro::ConnectionManager does Cro::Sink {
 }
 
 class Cro {
-    my subset ConnectionOrMessage where Cro::Message | Cro::Connection;
-
     my $next-label-lock = Lock.new;
     my $next-label = 1;
     sub next-label() {
@@ -317,6 +473,7 @@ class Cro {
         my $has-source = False;
         my $has-sink = False;
         my $has-connector = False;
+        my $has-connection-conditional = False;
         my $expected;
         my @repliers-to-insert;
         my @components;
@@ -327,16 +484,6 @@ class Cro {
                 die X::Cro::Compose::BadReplier.new(:$replyable);
             }
             @repliers-to-insert.unshift($replyable);
-        }
-        sub validate-consumer($consumer) {
-            unless $consumer.consumes ~~ ConnectionOrMessage {
-                die X::Cro::Compose::BadConsumer.new(:$consumer);
-            }
-        }
-        sub validate-producer($producer) {
-            unless $producer.produces ~~ ConnectionOrMessage {
-                die X::Cro::Compose::BadProducer.new(:$producer);
-            }
         }
 
         sub push-component($component) {
@@ -378,6 +525,11 @@ class Cro {
                     when Cro::Replyable {
                         check-and-add-replyable($_);
                     }
+                }
+                when Cro::ConnectionConditional {
+                    validate-consumer($_);
+                    validate-producer($_);
+                    $has-connection-conditional = True;
                 }
                 when Cro::Connector {
                     die X::Cro::Compose::OnlyOneConnector.new if $has-connector;
@@ -441,6 +593,10 @@ class Cro {
             }
         }
 
+        if $has-connection-conditional && !$has-connector {
+            die X::Cro::Compose::ConnectionConditionalWithoutConnector.new;
+        }
+
         if $has-connector {
             die X::Cro::Compose::SourceAndConnector.new if $has-source;
             die X::Cro::Compose::SinkAndConnector.new if $has-sink;
@@ -458,5 +614,17 @@ class Cro {
         else {
             Cro::CompositeTransform.new(:@components)
         }
+    }
+}
+
+my subset ConnectionOrMessage where Cro::Message | Cro::Connection;
+sub validate-consumer($consumer) {
+    unless $consumer.consumes ~~ ConnectionOrMessage {
+        die X::Cro::Compose::BadConsumer.new(:$consumer);
+    }
+}
+sub validate-producer($producer) {
+    unless $producer.produces ~~ ConnectionOrMessage {
+        die X::Cro::Compose::BadProducer.new(:$producer);
     }
 }
