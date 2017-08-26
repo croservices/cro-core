@@ -22,5 +22,5 @@
                 "Cro::Uri": "lib/Cro/Uri.pm6"
     },
     "resources": [],
-    "source-url"    : "https://github.com/jnthn/cro-core.git"
+    "source-url"    : "https://github.com/croservices/cro-core.git"
 }
