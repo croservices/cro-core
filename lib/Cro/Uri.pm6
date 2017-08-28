@@ -15,7 +15,7 @@ class Cro::Uri {
     has Str $.userinfo;
     has Str $.host;
     has Host $.host-class;
-    has Int $.port;
+    has $.port;
     has Str $.path;
     has Str $.query;
     has Str $.fragment;
