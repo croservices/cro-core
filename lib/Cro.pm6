@@ -405,7 +405,7 @@ class Cro::ConnectionManager does Cro::Sink {
                     :$label
                   )
                 !! Empty;
-            given Cro.compose(|@debug, @components, :$debug, :$label, :for-connection) {
+            given Cro.compose(@debug, @components, :$debug, :$label, :for-connection) {
                 when Cro::Sink {
                     if $!connection-type ~~ Cro::Replyable {
                         die X::Cro::ConnectionManager::Misuse.new: message =>
