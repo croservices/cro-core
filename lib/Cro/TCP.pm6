@@ -10,8 +10,8 @@ class Cro::TCP::Message does Cro::Message {
     has Blob $.data is rw;
     has $.connection;
 
-    method gist(Cro::TCP::Message:D:) {
-        "TCP Message\n  data = " ~ $!data.gist
+    method trace-output(Cro::TCP::Message:D:) {
+        "TCP Message\n" ~ self!trace-blob($!data).indent(2)
     }
 }
 
