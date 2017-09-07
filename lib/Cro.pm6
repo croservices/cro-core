@@ -382,8 +382,11 @@ class Cro::PipelineTraceTransform does Cro::Transform {
         }
     }
 
+    my $encode = ?%*ENV<CRO_TRACE_MACHINE_READABLE>;
     sub encode(Str $_) {
-        .subst('\\', '\\\\', :g).subst("\n", '\\n', :g)
+        $encode
+            ?? .subst('\\', '\\\\', :g).subst("\n", '\\n', :g)
+            !! $_
     }
 }
 
