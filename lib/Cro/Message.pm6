@@ -13,8 +13,8 @@ role Cro::Message {
     method !trace-blob(Blob $b) {
         my $limit = %*ENV<CRO_TRACE_MAX_BINARY_DUMP> // 4096;
         my @pieces;
-        loop (my int $i = 0; $i < $limit; $i += 16) {
-            my @line := $b[$i .. ($i + 16 min $b.elems) - 1];
+        loop (my int $i = 0; $i <= ($limit min $b.elems); $i += 16) {
+            my @line := $b[$i .. ($i + (16 min ($b.elems - $i))) - 1];
             my $hex-dump = @line.fmt('%02x', ' ');
             my $padding = ' ' x (1 + 16 * 3 - $hex-dump.chars);
             my $decode = @line.map({ 32 <= $_ <= 126 ?? chr($_) !! '.' }).join;
