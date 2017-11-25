@@ -388,7 +388,7 @@ class Cro::PipelineTraceTransform does Cro::Transform {
 
     method !output-trace($message --> Nil) {
         note "[TRACE($!label)] $!component.^name() $message";
-        $*ERR.flush;
+        try $*ERR.flush; # May throw on Windows, so guard with try
     }
 
     my $encode = ?%*ENV<CRO_TRACE_MACHINE_READABLE>;
