@@ -11,7 +11,7 @@ role Cro::Message {
 
     # Utility method for providing trace output of a blob, as a hex dump.
     method !trace-blob(Blob $b) {
-        my $limit = %*ENV<CRO_TRACE_MAX_BINARY_DUMP> // 4096;
+        my $limit = %*ENV<CRO_TRACE_MAX_BINARY_DUMP> // 512;
         my @pieces;
         loop (my int $i = 0; $i <= ($limit min $b.elems); $i += 16) {
             my @line := $b[$i .. ($i + (16 min ($b.elems - $i))) - 1];
