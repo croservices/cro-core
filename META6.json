@@ -12,6 +12,7 @@
                 "Cro::Connector": "lib/Cro/Connector.pm6",
                 "Cro::MediaType": "lib/Cro/MediaType.pm6",
                 "Cro::Message": "lib/Cro/Message.pm6",
+                "Cro::MessageWithBody": "lib/Cro/MessageWithBody.pm6",
                 "Cro::Replyable": "lib/Cro/Replyable.pm6",
                 "Cro::Service": "lib/Cro/Service.pm6",
                 "Cro::Sink": "lib/Cro/Sink.pm6",
