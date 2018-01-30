@@ -8,6 +8,10 @@
     "depends"       : [ ],
     "provides"      : {
                 "Cro": "lib/Cro.pm6",
+                "Cro::BodyParser": "lib/Cro/BodyParser.pm6",
+                "Cro::BodyParserSelector": "lib/Cro/BodyParserSelector.pm6",
+                "Cro::BodySerializer": "lib/Cro/BodySerializer.pm6",
+                "Cro::BodySerializerSelector": "lib/Cro/BodySerializerSelector.pm6",
                 "Cro::Connection": "lib/Cro/Connection.pm6",
                 "Cro::Connector": "lib/Cro/Connector.pm6",
                 "Cro::MediaType": "lib/Cro/MediaType.pm6",
