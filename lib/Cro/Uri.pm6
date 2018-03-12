@@ -67,7 +67,7 @@ class Cro::Uri {
             {} [ <[A..Za..z0..9!$&'()*+,;=._~-]>+ | '%' <[A..Fa..f0..9]>**2 ]*
         }
 
-        token IPv6address {
+        regex IPv6address {
             [
                 ||                                         [ <.h16> ":" ] ** 6 <.ls32>
                 ||                                    "::" [ <.h16> ":" ] ** 5 <.ls32>
