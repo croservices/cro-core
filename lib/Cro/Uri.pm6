@@ -54,7 +54,21 @@ class Cro::Uri {
             <.IPv4address>
         }
         regex host:sym<IPv6address> {
-            '[' <( [
+            '[' <( <.IPv6address> )> ']'
+        }
+
+        token host:sym<IPvFuture> {
+            '[' <(
+            v <[A..Fa..f0..9]>+ '.'
+            <[A..Za..z0..9!$&'()*+,;=:._~-]>+
+            )> ']'
+        }
+        token host:sym<reg-name> {
+            {} [ <[A..Za..z0..9!$&'()*+,;=._~-]>+ | '%' <[A..Fa..f0..9]>**2 ]*
+        }
+
+        regex IPv6address {
+            [
                 ||                                         [ <.h16> ":" ] ** 6 <.ls32>
                 ||                                    "::" [ <.h16> ":" ] ** 5 <.ls32>
                 || [                        <.h16> ]? "::" [ <.h16> ":" ] ** 4 <.ls32>
@@ -64,16 +78,7 @@ class Cro::Uri {
                 || [ [ <.h16> ":" ] ** 0..4 <.h16> ]? "::"                     <.ls32>
                 || [ [ <.h16> ":" ] ** 0..5 <.h16> ]? "::"                     <.h16>
                 || [ [ <.h16> ":" ] ** 0..6 <.h16> ]? "::"
-            ] )> ']'
-        }
-        token host:sym<IPvFuture> {
-            '[' <(
-            v <[A..Fa..f0..9]>+ '.'
-            <[A..Za..z0..9!$&'()*+,;=:._~-]>+
-            )> ']'
-        }
-        token host:sym<reg-name> {
-            {} [ <[A..Za..z0..9!$&'()*+,;=._~-]>+ | '%' <[A..Fa..f0..9]>**2 ]*
+            ]
         }
 
         token IPv4address {
