@@ -291,6 +291,30 @@ class Cro::Uri {
         $!origin
     }
 
+    grammar URI-Template {
+        token TOP { [<literal> | <expression>]* }
+        token literal { [ <literal-part> | <ucschar> | <iprivate> | <pct-encoded> ]+ }
+        token literal-part { <[\x21 \x23 \x24 \x26 \x28..\x3B \x3D \x3F..\x5B \x5D \x5F \x61..\x7A]> }
+        token ucschar  { <[ \xA0..\xD7FF \xF900..\xFDCF \xFDF0..\xFFEF
+                            \x10000..\x1FFFD \x20000..\x2FFFD \x30000..\x3FFFD
+                            \x40000..\x4FFFD \x50000..\x5FFFD \x60000..\x6FFFD
+                            \x70000..\x7FFFD \x80000..\x8FFFD \x90000..\x9FFFD
+                            \xA0000..\xAFFFD \xB0000..\xBFFFD \xC0000..\xCFFFD
+                            \xD0000..\xDFFFD \xE1000..\xEFFFD ]> }
+        token iprivate { <[ \xE000..\xF8FF \xF0000..\xFFFFD \x100000..\x10FFFD ]> }
+        token pct-encoded { '%' <xdigit> <xdigit> }
+        token expression { '{' <operator>? <var-list> '}' }
+        token operator { <op2> | <op3> | <op-reserve> }
+        token op2 { <[+#]> }
+        token op3 { <[./;?&]> }
+        token op-reserve { <[=,!@|]> }
+        token var-list { <varspec> [',' <varspec>]* }
+        token varspec  { <varname> <modifier-level4>? }
+        token varname  { <varchar> ['.' | <varchar>]* }
+        token varchar  { <alnum> | '_' | <pct-encoded> }
+        token modifier-level4 { <prefix> | '*' }
+        token prefix { ':' <[\x31..\x39]> \d ** 0..3 }
+    }
 }
 
 sub decode-percents(Str $s) is export(:decode-percents) {

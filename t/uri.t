@@ -393,4 +393,9 @@ for <//example.org/scheme-relative/URI/with/absolute/path/to/resource.txt.
     }
 }
 
+for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
+     http://www.example.com/v1/company/>.kv -> $i, $v {
+    ok Cro::Uri::URI-Template.parse($v), "Regex $i for URI Template passed";
+}
+
 done-testing;
