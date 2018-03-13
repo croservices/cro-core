@@ -142,6 +142,22 @@ class Cro::Uri {
             [<[A..Za..z0..9._~:@!$&'()*+,;=-]>+ | '%' <[A..Fa..f0..9]>**2]+
         }
 
+        token relative-ref {
+            <relative-part> [ '?' <query>] ? [ '#' <fragment> ]?
+        }
+
+        token relative-part {
+            [ '//' <authority> <path-abempty> ] | <path-absolute> | <path-noscheme> | <path-empty>
+        }
+
+        token path-noscheme {
+            <.segment-nz-nc> [ "/" <segment> ]*
+        }
+
+        token segment-nz-nc {
+            [<[A..Za..z0..9._~@!$&'()*+,;=-]>+ | '%' <[A..Fa..f0..9]>**2]+
+        }
+
         method panic($reason) {
             die X::Cro::Uri::ParseError.new(uri-string => self.orig, :$reason)
         }
