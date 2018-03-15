@@ -49,14 +49,14 @@ class Cro::Iri is Cro::Uri {
             {} [ <iunreserved> | <pct-encoded> | <sub-delims> ]*
         }
         token ipath-abempty  { ["/" <isegment> ]* }
-        token ipath-absolute { "/" [ <isegment-nz> [ "/" <isegment> ]? ]? }
+        token ipath-absolute { "/" [ <isegment-nz> [ "/" <isegment> ]* ]? }
         token ipath-noscheme { <isegment-nz-nc> [ "/" <isegment> ]* }
         token ipath-rootless { <isegment-nz> [ "/" <isegment> ]* }
         token ipath-empty    { '' }
-        
+
         token isegment { <ipchar>* }
-        token isegment-nz { <ipchar> }
-        token isegment-nz-nc { [ <iunreserved> | <pct-encoded> | <sub-delims> | '@' ] }
+        token isegment-nz { <ipchar>+ }
+        token isegment-nz-nc { [ <iunreserved> | <pct-encoded> | <sub-delims> | '@' ]+ }
 
         token ipchar { [ <iunreserved> | <pct-encoded> | <sub-delims> | ':' | '@' ] }
         token iquery { [ <ipchar> | <iprivate> | '/' | '?' ]* }
@@ -69,5 +69,7 @@ class Cro::Iri is Cro::Uri {
                           \xA0000..\xAFFFD \xB0000..\xBFFFD \xC0000..\xCFFFD
                           \xD0000..\xDFFFD \xE1000..\xEFFFD ]> }
         token iprivate { <[\xE000..\xF8FF \xF0000..\xFFFFD \x100000..\x10FFFD]> }
+        token pct-encoded { '%' <xdigit> <xdigit> }
+        token sub-delims { <[!$&'()*+,;=]> }
     }
 }
