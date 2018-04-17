@@ -22,6 +22,10 @@ class Cro::Uri {
 
     grammar GenericParser {
         token TOP {
+            <URI>
+        }
+
+        token URI {
             [ <scheme> || <.panic('Malformed scheme')> ]
             [ ":" || <.panic('Missing : after scheme')> ]
             <hier-part>
@@ -142,8 +146,14 @@ class Cro::Uri {
             [<[A..Za..z0..9._~:@!$&'()*+,;=-]>+ | '%' <[A..Fa..f0..9]>**2]+
         }
 
+        token ref {
+            || <?before <.scheme> ':'> <URI>
+            || <relative-ref>
+        }
+
         token relative-ref {
             <relative-part> [ '?' <query>] ? [ '#' <fragment> ]?
+            [ $ || <.panic('unexpected text at end')> ]
         }
 
         token relative-part {
@@ -168,6 +178,10 @@ class Cro::Uri {
 
     class GenericActions {
         method TOP($/) {
+            make $<URI>.ast;
+        }
+
+        method URI($/) {
             my %parts = scheme => ~$<scheme>, |$<hier-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
@@ -240,6 +254,10 @@ class Cro::Uri {
             make ~$/;
         }
 
+        method path-absolute($/) {
+            make ~$/;
+        }
+
         method path-rootless($/) {
             make ~$/;
         }
@@ -255,11 +273,53 @@ class Cro::Uri {
         method fragment($/) {
             make ~$/;
         }
+
+        method ref($/) {
+            make ($<URI> || $<relative-ref>).ast;
+        }
+
+        method relative-ref($/) {
+            my %parts = $<relative-part>.ast;
+            %parts<query> = $<query>.ast if $<query>;
+            %parts<fragment> = $<fragment>.ast if $<fragment>;
+            %parts<origin> = ~$/;
+            make Cro::Uri.bless(|%parts);
+        }
+
+        method relative-part($/) {
+            make $<authority>
+                ?? %( $<authority>.ast, path => $<path-abempty>.ast )
+                !! %( path => ($<path-absolute> || $<path-noscheme> || $<path-empty>).ast );
+        }
+
+        method path-noscheme($/) {
+            make ~$/;
+        }
     }
 
     method parse(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
                  :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions) {
+            .ast
+        }
+        else {
+            die X::Cro::Uri::ParseError.new(:$uri-string)
+        }
+    }
+
+    method parse-ref(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
+                     :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
+        with $grammar.parse($uri-string, :$actions, :rule<ref>) {
+            .ast
+        }
+        else {
+            die X::Cro::Uri::ParseError.new(:$uri-string)
+        }
+    }
+
+    method parse-relative(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
+                          :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
+        with $grammar.parse($uri-string, :$actions, :rule<relative-ref>) {
             .ast
         }
         else {

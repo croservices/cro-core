@@ -1,8 +1,11 @@
 use Cro::Uri;
 use Test;
 
-sub parses($desc, $uri, *@checks) {
-    with try Cro::Uri.parse($uri) -> $parsed {
+sub parses($desc, $uri, *@checks, :$relative, :$ref) {
+    my $method = $relative ?? 'parse-relative' !!
+                 $ref      ?? 'parse-ref' !!
+                              'parse';
+    with try Cro::Uri."$method"($uri) -> $parsed {
         pass $desc;
         for @checks.kv -> $i, $check {
             ok $check($parsed), "Check {$i + 1}";
@@ -377,16 +380,85 @@ for qw[- . _ ~ : @ ! $ & ' ( ) * + , ; = / ?] -> $ok {
         *.fragment eq "oh{$ok}yes";
 }
 
-for <//example.org/scheme-relative/URI/with/absolute/path/to/resource.txt.
-    //example.org/scheme-relative/URI/with/absolute/path/to/resource.
-    /relative/URI/with/absolute/path/to/resource.txt.
-    relative/path/to/resource.txt.
-    ../../../resource.txt.
-    ./resource.txt#frag01.
-    resource.txt.
-    #frag01.>.kv -> $i, $rel-uri {
-    ok Cro::Uri::GenericParser.parse($rel-uri, :rule<relative-ref>), "Regex $i, '$rel-uri' for relative Uri passed";
-}
+parses :relative, 'Relative with authority (1)',
+    '//example.org/scheme-relative/URI/with/absolute/path/to/resource.txt.',
+    !*.scheme.defined,
+    *.authority eq 'example.org',
+    *.path eq '/scheme-relative/URI/with/absolute/path/to/resource.txt.',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with authority (2)',
+    '//example.org/scheme-relative/URI/with/absolute/path/to/resource',
+    !*.scheme.defined,
+    *.authority eq 'example.org',
+    *.path eq '/scheme-relative/URI/with/absolute/path/to/resource',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with absolute path',
+    '/relative/URI/with/absolute/path/to/resource.txt',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq '/relative/URI/with/absolute/path/to/resource.txt',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with relative path (1)',
+    'relative/path/to/resource.txt',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq 'relative/path/to/resource.txt',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with relative path (2)',
+    '../../../resource.txt',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq '../../../resource.txt',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with relative path (3)',
+    'resource.txt',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq 'resource.txt',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :relative, 'Relative with relative path and fragment',
+    './resource.txt#frag01',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq './resource.txt',
+    !*.query.defined,
+    *.fragment eq 'frag01';
+
+parses :relative, 'Relative with fragment only',
+    '#frag01',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq '',
+    !*.query.defined,
+    *.fragment eq 'frag01';
+
+parses :ref, 'An absolute URI when asked to parse a reference',
+    'foo://example.com:8042/over/there',
+    *.scheme eq 'foo',
+    *.authority eq 'example.com:8042',
+    *.path eq '/over/there',
+    !*.query.defined,
+    !*.fragment.defined;
+
+parses :ref, 'A relative URI when asked to parse a reference',
+    'relative/path/to/resource.txt',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq 'relative/path/to/resource.txt',
+    !*.query.defined,
+    !*.fragment.defined;
 
 for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
      http://www.example.com/v1/company/>.kv -> $i, $v {
