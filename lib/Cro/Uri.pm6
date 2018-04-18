@@ -347,6 +347,107 @@ class Cro::Uri {
         $no-leader.split('/').map(&decode-percents).list
     }
 
+    multi method add(Cro::Uri:D: Str:D $r --> Cro::Uri) {
+        self.add(self.parse-ref($r))
+    }
+
+    multi method add(Cro::Uri:D: Cro::Uri $r --> Cro::Uri) {
+        my Str ($scheme, $authority, $path, $query);
+        with $r.scheme {
+            $scheme = $_;
+            $authority = $r.authority;
+            $path = remove-dot-segments($r.path);
+            $query = $r.query;
+        }
+        else {
+            with $r.authority {
+                $authority = $_;
+                $path = remove-dot-segments($r.path);
+                $query = $r.query;
+            }
+            else {
+                if $r.path eq '' {
+                    $path = $!path;
+                    with $r.query {
+                        $query = $_;
+                    }
+                    else {
+                        $query = $!query;
+                    }
+                }
+                else {
+                    if $r.path.starts-with('/') {
+                        $path = remove-dot-segments($r.path);
+                    }
+                    else {
+                        $path = remove-dot-segments(self!merge-path($r.path));
+                    }
+                    $query = $r.query;
+                }
+                $authority = $!authority;
+            }
+            $scheme = $!scheme;
+        }
+        self.new(:$scheme, :$authority, :$path, :$query, :fragment($r.fragment))
+    }
+
+    sub remove-dot-segments($path) {
+        my $input = $path;
+        my $output = '';
+        while $input {
+            if $input.starts-with('../') {
+                $input .= substr(3);
+            }
+            elsif $input.starts-with('./') {
+                $input .= substr(2);
+            }
+            elsif $input.starts-with('/./') {
+                $input = $input.substr(2);
+            }
+            elsif $input eq '/.' {
+                $input = '/';
+            }
+            elsif $input.starts-with('/../') {
+                $input = $input.substr(3);
+                with $output.rindex('/') {
+                    $output = $output.substr(0, $_);
+                }
+            }
+            elsif $input eq '/..' {
+                $input = '/';
+                with $output.rindex('/') {
+                    $output = $output.substr(0, $_);
+                }
+            }
+            elsif $input eq '.' | '..' {
+                $input = '';
+            }
+            else {
+                with $input.index('/', 1) {
+                    $output ~= $input.substr(0, $_);
+                    $input = $input.substr($_);
+                }
+                else {
+                    $output ~= $input;
+                    $input = '';
+                }
+            }
+        }
+        $output
+    }
+
+    method !merge-path($r-path) {
+        if $!authority.defined && $!path eq '' {
+            "/$r-path"
+        }
+        orwith $!path.rindex('/') {
+            $!path.substr(0, $_ + 1) ~ $r-path
+        }
+        else {
+            $r-path
+        }
+    }
+
     multi method Str(Cro::Uri:D: --> Str) {
         my $result = '';
         with $!scheme {

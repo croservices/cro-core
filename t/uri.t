@@ -460,6 +460,51 @@ parses :ref, 'A relative URI when asked to parse a reference',
     !*.query.defined,
     !*.fragment.defined;
 
+given Cro::Uri.parse('http://a/b/c/d;p?q') -> $base {
+    is $base.add("g:h"), "g:h";
+    is $base.add("g"), "http://a/b/c/g";
+    is $base.add("./g"), "http://a/b/c/g";
+    is $base.add("g/"), "http://a/b/c/g/";
+    is $base.add("/g"), "http://a/g";
+    is $base.add("//g"), "http://g";
+    is $base.add("?y") , "http://a/b/c/d;p?y";
+    is $base.add("g?y"), "http://a/b/c/g?y";
+    is $base.add("#s"), "http://a/b/c/d;p?q#s";
+    is $base.add("g#s"), "http://a/b/c/g#s";
+    is $base.add("g?y#s"), "http://a/b/c/g?y#s";
+    is $base.add(";x"), "http://a/b/c/;x";
+    is $base.add("g;x"), "http://a/b/c/g;x";
+    is $base.add("g;x?y#s"), "http://a/b/c/g;x?y#s";
+    is $base.add(""), "http://a/b/c/d;p?q";
+    is $base.add("."), "http://a/b/c/";
+    is $base.add("./"), "http://a/b/c/";
+    is $base.add(".."), "http://a/b/";
+    is $base.add("../"), "http://a/b/";
+    is $base.add("../g"), "http://a/b/g";
+    is $base.add("../.."), "http://a/";
+    is $base.add("../../"), "http://a/";
+    is $base.add("../../g"), "http://a/g";
+    is $base.add("../../../g"), "http://a/g";
+    is $base.add("../../../../g"), "http://a/g";
+    is $base.add("/./g"),  "http://a/g";
+    is $base.add("/../g"),  "http://a/g";
+    is $base.add("g."), "http://a/b/c/g.";
+    is $base.add(".g"), "http://a/b/c/.g";
+    is $base.add("g..") , "http://a/b/c/g..";
+    is $base.add("..g"), "http://a/b/c/..g";
+    is $base.add("./../g"), "http://a/b/g";
+    is $base.add("./g/."), "http://a/b/c/g/";
+    is $base.add("g/./h"), "http://a/b/c/g/h";
+    is $base.add("g/../h"), "http://a/b/c/h";
+    is $base.add("g;x=1/./y"), "http://a/b/c/g;x=1/y";
+    is $base.add("g;x=1/../y"), "http://a/b/c/y";
+    is $base.add("g?y/./x"), "http://a/b/c/g?y/./x";
+    is $base.add("g?y/../x"), "http://a/b/c/g?y/../x";
+    is $base.add("g#s/./x"), "http://a/b/c/g#s/./x";
+    is $base.add("g#s/../x"), "http://a/b/c/g#s/../x";
+    is $base.add("http:g"), "http:g";
+}
+
 for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
      http://www.example.com/v1/company/>.kv -> $i, $v {
     ok Cro::Uri::URI-Template.parse($v), "Regex $i for URI Template passed";
