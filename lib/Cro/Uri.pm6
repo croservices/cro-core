@@ -9,7 +9,6 @@ class X::Cro::Uri::ParseError is Exception {
 class Cro::Uri {
     enum Host <RegName IPv4 IPv6 IPvFuture>;
 
-    has Str $.origin;
     has Str $.scheme;
     has Str $.authority;
     has Str $.userinfo;
@@ -185,7 +184,6 @@ class Cro::Uri {
             my %parts = scheme => ~$<scheme>, |$<hier-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
-            %parts<origin> = ~$/;
             make Cro::Uri.bless(|%parts);
         }
 
@@ -282,7 +280,6 @@ class Cro::Uri {
             my %parts = $<relative-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
-            %parts<origin> = ~$/;
             make Cro::Uri.bless(|%parts);
         }
 
@@ -351,7 +348,21 @@ class Cro::Uri {
     }
 
     multi method Str(Cro::Uri:D: --> Str) {
-        $!origin
+        my $result = '';
+        with $!scheme {
+            $result ~= "$_:";
+        }
+        with $!authority {
+            $result ~= "//$_";
+        }
+        $result ~= $!path;
+        with $!query {
+            $result ~= "?$_";
+        }
+        with $!fragment {
+            $result ~= "#$_";
+        }
+        return $result;
     }
 
     grammar URI-Template {
