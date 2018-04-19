@@ -503,6 +503,7 @@ given Cro::Uri.parse('http://a/b/c/d;p?q') -> $base {
     is $base.add("g#s/./x"), "http://a/b/c/g#s/./x";
     is $base.add("g#s/../x"), "http://a/b/c/g#s/../x";
     is $base.add("http:g"), "http:g";
+    is $base.add("/"), "http://a/";
 }
 
 given Cro::Uri.parse('foo://bob:s3cr3t@fbi.gov:4242/a').add('b') {

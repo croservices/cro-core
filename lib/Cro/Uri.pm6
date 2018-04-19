@@ -114,7 +114,7 @@ class Cro::Uri {
         }
 
         token path-absolute {
-            '/' <segment-nz> [ "/" <segment> ]*
+            '/' [ <segment-nz> [ "/" <segment> ]* ]?
         }
 
         token path-rootless {
