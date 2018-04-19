@@ -294,6 +294,20 @@ class Cro::Uri {
         }
     }
 
+    submethod TWEAK(:$authority, :$host) {
+        if $authority && !$host.defined {
+            # We were constructed with an unparsed authority.
+            with GenericParser.parse($authority, :rule<authority>, :actions(GenericActions)) {
+                given .ast {
+                    $!host = $_ with .<host>;
+                    $!host-class = $_ with .<host-class>;
+                    $!port = $_ with .<port>;
+                    $!userinfo = $_ with .<userinfo>;
+                }
+            }
+        }
+    }
+
     method parse(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
                  :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions) {

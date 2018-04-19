@@ -505,6 +505,17 @@ given Cro::Uri.parse('http://a/b/c/d;p?q') -> $base {
     is $base.add("http:g"), "http:g";
 }
 
+given Cro::Uri.parse('foo://bob:s3cr3t@fbi.gov:4242/a').add('b') {
+    is .scheme, 'foo', 'Correct scheme after relative resolution';
+    is .authority, 'bob:s3cr3t@fbi.gov:4242', 'Correct authority after relative resolution';
+    is .host, 'fbi.gov', 'Correct host after relative resolution';
+    is .host-class, Cro::Uri::Host::RegName, 'Correct host class after relative resolution';
+    is .port, 4242, 'Correct port after relative resolution';
+    is .userinfo, 'bob:s3cr3t', 'Correct user info after relative resolution';
+    is .user, 'bob', 'Correct user after relative resolution';
+    is .password, 's3cr3t', 'Correct password after relative resolution';
+}
+
 for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
      http://www.example.com/v1/company/>.kv -> $i, $v {
     ok Cro::Uri::URI-Template.parse($v), "Regex $i for URI Template passed";
