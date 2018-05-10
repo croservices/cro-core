@@ -62,6 +62,26 @@ parses 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Parameters with escape
     is .Str, 'application/vnd.foobar; foo="bar\"d"; baz="\""', 'Stringifies correctly';
 };
 
+parses 'text/plain; charset=UTF-8;', 'Media type with stray ; after parameter', {
+    is .type, 'text', 'Correct type';
+    is .subtype, 'plain', 'Correct subtype';
+    is .subtype-name, 'plain', 'Correct subtype name';
+    is .tree, '', 'No tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, ('charset' => 'UTF-8',), 'Correct parameter';
+    is .Str, 'text/plain; charset=UTF-8', 'Stringifies correctly';
+};
+
+parses 'text/plain;', 'Media type with stray ; at end, but no parameters', {
+    is .type, 'text', 'Correct type';
+    is .subtype, 'plain', 'Correct subtype';
+    is .subtype-name, 'plain', 'Correct subtype name';
+    is .tree, '', 'No tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, (), 'No parameters';
+    is .Str, 'text/plain', 'Stringifies correctly';
+};
+
 refuses 'text', 'No /subtype';
 refuses 'text', 'No subtype';
 refuses 'x{y}/plain', 'Bad chars in type';

@@ -11,7 +11,7 @@ class Cro::MediaType {
     has Pair @.parameters;
 
     grammar Grammar {
-        token TOP { <type> '/' <subtype> <parameters> }
+        token TOP { <type> '/' <subtype> <parameters> \s* ';'? }
         token type { <[A..Za..z0..9_-]>+ }
         token subtype {
             [
