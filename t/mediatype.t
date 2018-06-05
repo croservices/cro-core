@@ -82,6 +82,16 @@ parses 'text/plain;', 'Media type with stray ; at end, but no parameters', {
     is .Str, 'text/plain', 'Stringifies correctly';
 };
 
+parses 'application/vnd.pgrst.object+json', 'Multiple dotted parts in the name', {
+    is .type, 'application', 'Correct type';
+    is .subtype, 'vnd.pgrst.object+json', 'Correct subtype';
+    is .subtype-name, 'pgrst.object', 'Correct subtype name';
+    is .tree, 'vnd', 'Correct tree';
+    is .suffix, 'json', 'No suffix';
+    is-deeply .parameters.List, (), 'Correct parameters';
+    is .Str, 'application/vnd.pgrst.object+json', 'Stringifies correctly';
+}
+
 refuses 'text', 'No /subtype';
 refuses 'text', 'No subtype';
 refuses 'x{y}/plain', 'Bad chars in type';

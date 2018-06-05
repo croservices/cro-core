@@ -16,7 +16,7 @@ class Cro::MediaType {
         token subtype {
             [
             | $<name>=[<[A..Za..z0..9_-]>+]
-            | $<tree>=[<[A..Za..z0..9_-]>+] '.' $<name>=[<[A..Za..z0..9_-]>+]
+            | $<tree>=[<[A..Za..z0..9_-]>+] '.' $<name>=[<[A..Za..z0..9_.-]>+]
             ]
             [ '+' $<suffix>=[<[A..Za..z0..9_-]>+] ]?
         }
