@@ -26,8 +26,8 @@ class Cro::TCP::Replier does Cro::Sink {
         supply {
             whenever $pipeline {
                 whenever $!socket.write(.data) {}
-                LAST $!socket.close;
             }
+            CLOSE $!socket.close;
         }
     }
 }
