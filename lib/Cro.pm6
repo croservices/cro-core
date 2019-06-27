@@ -457,16 +457,27 @@ class Cro::ConnectionManager does Cro::Sink {
     method consumes() { $!connection-type }
 
     method sinker(Supply:D $incoming) {
-        $incoming.do: -> $connection {
-            my $messages = $connection.incoming;
-            my $to-sink = $!transformer
+        supply {
+            whenever $incoming -> $connection {
+                whenever self!start-connection($connection) {
+                    QUIT {
+                        default {
+                            .note;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    method !start-connection(Cro::Connection $connection) {
+        my $messages = $connection.incoming;
+        my $to-sink = $!transformer
                 ?? $!transformer.transformer($messages)
                 !! $messages;
-            my $sink = $!sinker
+        return $!sinker
                 ?? $!sinker.sinker($to-sink)
                 !! $connection.replier.sinker($to-sink);
-            $sink.tap: quit => { .note };
-        }
     }
 }
 
