@@ -514,3 +514,9 @@ sub decode-percents(Str $s) is export(:decode-percents) {
             })
         !! $s
 }
+
+sub encode-percents(Str $s) is export(:encode-percents) {
+    $s.subst: :g, /<-[A..Za..z0..9_.~-]>+/, {
+        .Str.encode('utf8').list.map({ '%' ~ .base(16) }).join
+    }
+}

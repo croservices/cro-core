@@ -529,4 +529,11 @@ for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
     is decode-percents('p%C5%99ib%C4%9Bh'), 'přiběh', 'decode-percents decodes non-ASCII as UTF-8 octets';
 }
 
+{
+    use Cro::Uri :encode-percents;
+    is encode-percents('abcd1234'), 'abcd1234', 'encode-percents with nothing to encode works';
+    is encode-percents('a$?b!/3\45:6'), 'a%24%3Fb%21%2F3%5C45%3A6', 'encode-percents in ASCII range works';
+    is encode-percents('přiběh'), 'p%C5%99ib%C4%9Bh', 'encode-percents encodes non-ASCII as UTF-8 octets';
+}
+
 done-testing;
