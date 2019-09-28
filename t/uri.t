@@ -522,4 +522,11 @@ for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
     ok Cro::Uri::URI-Template.parse($v), "Regex $i for URI Template passed";
 }
 
+{
+    use Cro::Uri :decode-percents;
+    is decode-percents('abcd1234'), 'abcd1234', 'decode-percents with nothing to decode works';
+    is decode-percents('a%24%3Fb%21%2F3%5C45%3A6'), 'a$?b!/3\45:6', 'decode-percents in ASCII range works';
+    is decode-percents('p%C5%99ib%C4%9Bh'), 'přiběh', 'decode-percents decodes non-ASCII as UTF-8 octets';
+}
+
 done-testing;
