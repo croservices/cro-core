@@ -12,7 +12,7 @@ class Cro::Uri {
     enum Host <RegName IPv4 IPv6 IPvFuture>;
 
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "http"
+    #| this would return "https"
     has Str $.scheme;
 
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
