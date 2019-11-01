@@ -3,11 +3,27 @@ class X::Cro::MediaType::Invalid is Exception {
     method message() { "Could not parse media type '$!media-type'" }
 }
 
+#| Provides for parsing and serialization of media types
 class Cro::MediaType {
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return "application"
     has Str $.type is required;
+
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return "json"
     has Str $.suffix = '';
+
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return "foo"
     has Str $.subtype-name is required;
+
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return "vnd"
     has Str $.tree = '';
+
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return an array containing a Pair with key "charset" and
+    #| value "UTF-8"
     has Pair @.parameters;
 
     grammar Grammar {
@@ -66,6 +82,7 @@ class Cro::MediaType {
         }
     }
 
+    #| Parse a media type, such as text/html, into a Cro::MediaType object
     method parse(Str() $media-type --> Cro::MediaType) {
         with Grammar.parse($media-type, :actions(Actions)) {
             .ast
@@ -75,16 +92,22 @@ class Cro::MediaType {
         }
     }
 
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return ""vnd.foo+json"
     method subtype() {
         ($!tree ?? "$!tree." !! "") ~
             $!subtype-name ~
             ($!suffix ?? "+$!suffix" !! "")
     }
 
+    #| Given the example "application/vnd.foo+json; charset=UTF-8", this
+    #| would return "application/vnd.foo+json"
     method type-and-subtype() {
         "$!type/$.subtype"
     }
 
+    #| Transform the Cro::MediaType object into a string representation of
+    #| the media type, for example for use in a HTTP Content-type header
     multi method Str(Cro::MediaType:D:) {
         "$!type/$.subtype" ~ @!parameters.map(&param-str).join
     }
