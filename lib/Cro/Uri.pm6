@@ -6,17 +6,45 @@ class X::Cro::Uri::ParseError is Exception {
     }
 }
 
+#| An immutable representation of a URI
 class Cro::Uri {
+    #| The kind of host found in the URI (a domain name or some kind of IP address)
     enum Host <RegName IPv4 IPv6 IPvFuture>;
 
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "http"
     has Str $.scheme;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "user@cro.services:44433"
     has Str $.authority;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "user"
     has Str $.userinfo;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "cro.services"
     has Str $.host;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return Cro::Uri::Host::RegName
     has Host $.host-class;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return 44433
     has $.port;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "/example/url"
     has Str $.path;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "foo=bar&x=42"
     has Str $.query;
+
+    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return "here"
     has Str $.fragment;
 
     grammar GenericParser {
@@ -308,6 +336,7 @@ class Cro::Uri {
         }
     }
 
+    #| Parse a URI into a Cro::Uri object
     method parse(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
                  :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions) {
@@ -318,6 +347,8 @@ class Cro::Uri {
         }
     }
 
+    #| Parse a URI reference (that is, either an absolute or relative URI) into
+    #| a Cro::Uri object
     method parse-ref(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
                      :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions, :rule<ref>) {
@@ -328,6 +359,8 @@ class Cro::Uri {
         }
     }
 
+    #| Parse a relative URI into a Cro::Uri object (a relative URI must not
+    #| include a scheme)
     method parse-relative(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
                           :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions, :rule<relative-ref>) {
@@ -338,6 +371,8 @@ class Cro::Uri {
         }
     }
 
+    #| Obtain the user part of the user info, if any, with percent sequences
+    #| decoded
     method user(--> Str) {
         with $!userinfo {
             decode-percents(.split(":", 2)[0])
@@ -347,6 +382,8 @@ class Cro::Uri {
         }
     }
 
+    #| Obtain the password part of the user info, if any, with percent sequences
+    #| decoded (use of this is considered deprecated)
     method password(--> Str) {
         with $!userinfo {
             with .split(":", 2)[1] {
@@ -356,15 +393,28 @@ class Cro::Uri {
         return Str;
     }
 
+    #| Return an array of path segments, decoding any percent sequences found in
+    #| them. Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
+    #| this would return an array ["example", "foo"].
     method path-segments(Cro::Uri:D: --> List) {
         my $no-leader = $!path.starts-with('/') ?? $!path.substr(1) !! $!path;
         $no-leader.split('/').map(&decode-percents).list
     }
 
+    #| Parse the string as a URI reference, and the apply the URI reference resolution
+    #| algorithm to produce a new Cro::Uri. For example, if this was called on a
+    #| Cro::Uri instance representing the URI "http://cro.serivces/docs", and the
+    #| string passed contains "/roadmap", the result would be a Cro::Uri object
+    #| representing "http://cro.services/roadmap".
     multi method add(Cro::Uri:D: Str:D $r --> Cro::Uri) {
         self.add(self.parse-ref($r))
     }
 
+    #| Applies the URI reference resolution algorithm, treating the passed URI
+    #| as a URI reference, in order to produce a new Cro::Uri. For example, if this was called on a
+    #| Cro::Uri instance representing the URI "http://cro.serivces/docs", and the
+    #| Cro::Uri instance passed as an argument represented "/roadmap", the result
+    #| would be a Cro::Uri object representing "http://cro.services/roadmap".
     multi method add(Cro::Uri:D: Cro::Uri $r --> Cro::Uri) {
         my Str ($scheme, $authority, $path, $query);
         with $r.scheme {
@@ -462,6 +512,7 @@ class Cro::Uri {
         }
     }
 
+    #| Turn the Cro::Uri object into a string representation of the URI
     multi method Str(Cro::Uri:D: --> Str) {
         my $result = '';
         with $!scheme {
@@ -506,6 +557,8 @@ class Cro::Uri {
     }
 }
 
+#| Perform percent sequence decoding according to the URI specification.
+#| Anything outside of the ASCII range will be interpreted as UTF-8.
 sub decode-percents(Str $s) is export(:decode-percents) {
     $s.contains('%')
         ?? $s.subst(:g, /[ '%' (<[A..Fa..f0..9]>**2) ]+/,
@@ -515,6 +568,9 @@ sub decode-percents(Str $s) is export(:decode-percents) {
         !! $s
 }
 
+#| Perform percent sequence encoding according to the URI specification.
+#| Any characters outside of the ASCII range will be encoded as UTF-8,
+#| and then each octet represented as a percent escape.
 sub encode-percents(Str $s) is export(:encode-percents) {
     $s.subst: :g, /<-[A..Za..z0..9_.~-]>+/, {
         .Str.encode('utf8').list.map({ '%' ~ .base(16) }).join
