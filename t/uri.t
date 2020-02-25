@@ -536,4 +536,11 @@ for <http://www.example.com/{term:1}/{term}/{test*}/foo{?query,number}
     is encode-percents('přiběh'), 'p%C5%99ib%C4%9Bh', 'encode-percents encodes non-ASCII as UTF-8 octets';
 }
 
+{
+    my class FooUri is Cro::Uri {}
+    isa-ok FooUri.parse($long-name), FooUri, '.parse respects subclassing';
+    isa-ok FooUri.parse-ref($long-name), FooUri, '.parse-ref respects subclassing';
+    isa-ok FooUri.parse-relative('/foo'), FooUri, '.parse-relative respects subclassing';
+}
+
 done-testing;

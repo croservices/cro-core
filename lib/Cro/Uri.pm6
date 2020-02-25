@@ -204,6 +204,8 @@ class Cro::Uri {
     }
 
     class GenericActions {
+        has $.create;
+
         method TOP($/) {
             make $<URI>.ast;
         }
@@ -212,7 +214,7 @@ class Cro::Uri {
             my %parts = scheme => ~$<scheme>, |$<hier-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
-            make Cro::Uri.bless(|%parts);
+            make (self ?? $!create !! Cro::Uri).bless(|%parts);
         }
 
         method hier-part:sym<authority>($/) {
@@ -308,7 +310,7 @@ class Cro::Uri {
             my %parts = $<relative-part>.ast;
             %parts<query> = $<query>.ast if $<query>;
             %parts<fragment> = $<fragment>.ast if $<fragment>;
-            make Cro::Uri.bless(|%parts);
+            make (self ?? $!create !! Cro::Uri).bless(|%parts);
         }
 
         method relative-part($/) {
@@ -338,7 +340,7 @@ class Cro::Uri {
 
     #| Parse a URI into a Cro::Uri object
     method parse(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
-                 :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
+                 :$actions = Cro::Uri::GenericActions.new(create => self) --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions) {
             .ast
         }
@@ -350,7 +352,7 @@ class Cro::Uri {
     #| Parse a URI reference (that is, either an absolute or relative URI) into
     #| a Cro::Uri object
     method parse-ref(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
-                     :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
+                     :$actions = Cro::Uri::GenericActions.new(create => self) --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions, :rule<ref>) {
             .ast
         }
@@ -362,7 +364,7 @@ class Cro::Uri {
     #| Parse a relative URI into a Cro::Uri object (a relative URI must not
     #| include a scheme)
     method parse-relative(Str() $uri-string, :$grammar = Cro::Uri::GenericParser,
-                          :$actions = Cro::Uri::GenericActions --> Cro::Uri) {
+                          :$actions = Cro::Uri::GenericActions.new(create => self) --> Cro::Uri) {
         with $grammar.parse($uri-string, :$actions, :rule<relative-ref>) {
             .ast
         }
