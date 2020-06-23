@@ -89,12 +89,10 @@ class Cro::TCP::Connector does Cro::Connector {
                     emit Cro::TCP::Message.new(:$data);
                     LAST done;
                 }
-                # XXX Work around Rakudo bug involving CLOSE (closes over the
-                # wrong self, resulting in closing the wrong socket).
-                #CLOSE {
-                #    $!socket.close;
-                #}
-            }.on-close({ $!socket.close })
+                CLOSE {
+                    $!socket.close;
+                }
+            }
         }
     }
 
