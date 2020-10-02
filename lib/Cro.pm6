@@ -6,6 +6,7 @@ use Cro::Service;
 use Cro::Sink;
 use Cro::Source;
 use Cro::Transform;
+use Cro::UnhandledErrorReporter;
 
 class X::Cro::Compose::Empty is Exception {
     method message() { "Cannot compose an empty list of components" }
@@ -462,7 +463,7 @@ class Cro::ConnectionManager does Cro::Sink {
                 whenever self!start-connection($connection) {
                     QUIT {
                         default {
-                            .note;
+                            report-unhandled-error($_);
                         }
                     }
                 }
