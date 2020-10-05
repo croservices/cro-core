@@ -2,8 +2,22 @@ use Cro::BodySerializer;
 use Cro::MessageWithBody;
 
 class X::Cro::BodySerializerSelector::NoneApplicable is Exception {
+    has Str $.hint;
+    has Str $.body-type;
+
+    submethod BUILD(Cro::MessageWithBody :$message!, :$response-body!) {
+        with $message {
+            $!hint = $message.error-hint;
+        }
+        with $response-body {
+            $!body-type = $response-body.WHAT.raku;
+        }
+    }
+
     method message() {
-        "No applicable body serializer could be found for this message"
+        "No applicable body serializer could be found for this message" ~
+          ($!hint ?? "\n$!hint" !! "") ~
+          ($!body-type ?? ", with a body of type $!body-type" !! "");
     }
 }
 
@@ -18,7 +32,7 @@ class Cro::BodySerializerSelector::List does Cro::BodySerializerSelector {
         for @!serializers {
             .return if .is-applicable($message, $body);
         }
-        die X::Cro::BodySerializerSelector::NoneApplicable.new;
+        die X::Cro::BodySerializerSelector::NoneApplicable.new(:$message, :response-body($body));
     }
 }
 

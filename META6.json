@@ -24,6 +24,7 @@
                 "Cro::TCP": "lib/Cro/TCP.pm6",
                 "Cro::Transform": "lib/Cro/Transform.pm6",
                 "Cro::Types": "lib/Cro/Types.pm6",
+                "Cro::UnhandledErrorReporter": "lib/Cro/UnhandledErrorReporter.pm6",
                 "Cro::Uri": "lib/Cro/Uri.pm6",
                 "Cro::Iri": "lib/Cro/Iri.pm6"
     },

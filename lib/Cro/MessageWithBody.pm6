@@ -80,4 +80,6 @@ role Cro::MessageWithBody does Cro::Message {
 
     method body-parser-selector() { ... }
     method body-serializer-selector() { ... }
+
+    method error-hint() { Nil }
 }
