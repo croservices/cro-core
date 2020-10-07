@@ -10,7 +10,7 @@ class X::Cro::BodySerializerSelector::NoneApplicable is Exception {
             $!hint = $message.error-hint;
         }
         with $response-body {
-            $!body-type = $response-body.WHAT.raku;
+            $!body-type = $response-body.^name;
         }
     }
 
