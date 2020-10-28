@@ -5,6 +5,7 @@ use Cro::Replyable;
 use Cro::Sink;
 use Cro::Source;
 use Cro::Types;
+use Cro::TCP::NoDelay;
 
 class Cro::TCP::Message does Cro::Message {
     has Blob $.data is rw;
@@ -59,12 +60,14 @@ class Cro::TCP::ServerConnection does Cro::Connection does Cro::Replyable {
 class Cro::TCP::Listener does Cro::Source {
     has Str $.host = 'localhost';
     has Cro::Port $.port is required;
+    has Bool $.nodelay = False;
 
     method produces() { Cro::TCP::ServerConnection }
 
     method incoming() {
         supply {
             whenever IO::Socket::Async.listen($!host, $!port) -> $socket {
+                nodelay($socket) if $.nodelay;
                 emit Cro::TCP::ServerConnection.new(:$socket);
             }
         }
@@ -99,8 +102,12 @@ class Cro::TCP::Connector does Cro::Connector {
     method consumes() { Cro::TCP::Message }
     method produces() { Cro::TCP::Message }
 
-    method connect(*%options --> Promise) {
+    method connect(:$nodelay, *%options --> Promise) {
         IO::Socket::Async.connect(%options<host> // 'localhost', %options<port>)
-            .then({ Transform.new(socket => .result) })
+            .then: {
+                my $socket = .result;
+                nodelay($socket) if $nodelay;
+                Transform.new(:$socket)
+            }
     }
 }
