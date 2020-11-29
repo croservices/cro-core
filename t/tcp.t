@@ -49,8 +49,8 @@ ok Cro::TCP::Connector.produces ~~ Cro::TCP::Message, 'TCP connector produces TC
 }
 
 # Cro::TCP::ServerConnection and Cro::TCP::Message
-{
-    my $lis = Cro::TCP::Listener.new(port => TEST_PORT);
+sub test-server-conn($listener-options) {
+    my $lis = Cro::TCP::Listener.new(port => TEST_PORT, |$listener-options);
     my $server-conns = Channel.new;
     my $tap = $lis.incoming.tap({ $server-conns.send($_) });
     my $client-conn = await IO::Socket::Async.connect('localhost', TEST_PORT);
@@ -100,6 +100,13 @@ ok Cro::TCP::Connector.produces ~~ Cro::TCP::Message, 'TCP connector produces TC
 
     $client-conn.close;
     $tap.close;
+}
+
+# Test ServerConnection with all variants of Cro::TCP::Listener nodelay setting
+my @nodelay-options = (), :!nodelay, :nodelay;
+for @nodelay-options {
+    subtest "Server connection with Listener options {.raku}",
+            { test-server-conn($_) };
 }
 
 my class UppercaseTransform does Cro::Transform {
