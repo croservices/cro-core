@@ -105,7 +105,7 @@ sub test-server-conn($listener-options) {
 # Test ServerConnection with all variants of Cro::TCP::Listener nodelay setting
 my @nodelay-options = (), :!nodelay, :nodelay;
 for @nodelay-options {
-    subtest "Server connection with Listener options {.raku}",
+    subtest "Server connection with Listener options {.perl}",
             { test-server-conn($_) };
 }
 
@@ -209,7 +209,7 @@ sub test-connector-nodelay($listen-option, $connect-option) {
     for < first second third > {
         my $message = Cro::TCP::Message.new(:data(.encode('ascii')));
         $send.emit($message);
-        # say "Emitted '$_' as $message.raku()";
+        # say "Emitted '$_' as $message.perl()";
         is $client-received.receive.data.decode('ascii'), .uc, "Reply to $_ message correct";
     }
 
@@ -218,7 +218,7 @@ sub test-connector-nodelay($listen-option, $connect-option) {
 
 # Test all combinations of client and server :nodelay settings
 for @nodelay-options X @nodelay-options {
-    subtest "Server listened with {.[0].raku}, client connected with {.[1].raku}",
+    subtest "Server listened with {.[0].perl}, client connected with {.[1].perl}",
             { test-connector-nodelay(|$_) };
 }
 
