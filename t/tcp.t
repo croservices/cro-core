@@ -197,14 +197,11 @@ sub test-connector-nodelay($listen-option, $connect-option) {
     my $loud-service = Cro.compose($listener, UppercaseTransform);
     $loud-service.start;
 
-    my $send = Supplier.new;
+    my $send = Supplier::Preserving.new;
     my $responses = Cro::TCP::Connector.establish($send.Supply, port => TEST_PORT,
                                                   |$connect-option);
     ok $responses ~~ Supply, 'Connector establish method returns a Supply';
     my $client-received = $responses.Channel;
-
-    # Without this, often deadlocks after sending first message, but why?
-    sleep(.01);
 
     for < first second third > {
         my $message = Cro::TCP::Message.new(:data(.encode('ascii')));
