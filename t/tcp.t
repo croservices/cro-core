@@ -49,8 +49,8 @@ ok Cro::TCP::Connector.produces ~~ Cro::TCP::Message, 'TCP connector produces TC
 }
 
 # Cro::TCP::ServerConnection and Cro::TCP::Message
-{
-    my $lis = Cro::TCP::Listener.new(port => TEST_PORT);
+sub test-server-conn($listener-options) {
+    my $lis = Cro::TCP::Listener.new(port => TEST_PORT, |$listener-options);
     my $server-conns = Channel.new;
     my $tap = $lis.incoming.tap({ $server-conns.send($_) });
     my $client-conn = await IO::Socket::Async.connect('localhost', TEST_PORT);
@@ -100,6 +100,13 @@ ok Cro::TCP::Connector.produces ~~ Cro::TCP::Message, 'TCP connector produces TC
 
     $client-conn.close;
     $tap.close;
+}
+
+# Test ServerConnection with all variants of Cro::TCP::Listener nodelay setting
+my @nodelay-options = (), :!nodelay, :nodelay;
+for @nodelay-options {
+    subtest "Server connection with Listener options {.perl}",
+            { test-server-conn($_) };
 }
 
 my class UppercaseTransform does Cro::Transform {
@@ -183,6 +190,33 @@ my class UppercaseTransform does Cro::Transform {
             }
         },
         'Establishing connection dies once service is stopped';
+}
+
+sub test-connector-nodelay($listen-option, $connect-option) {
+    my $listener = Cro::TCP::Listener.new(port => TEST_PORT, |$listen-option);
+    my $loud-service = Cro.compose($listener, UppercaseTransform);
+    $loud-service.start;
+
+    my $send = Supplier::Preserving.new;
+    my $responses = Cro::TCP::Connector.establish($send.Supply, port => TEST_PORT,
+                                                  |$connect-option);
+    ok $responses ~~ Supply, 'Connector establish method returns a Supply';
+    my $client-received = $responses.Channel;
+
+    for < first second third > {
+        my $message = Cro::TCP::Message.new(:data(.encode('ascii')));
+        $send.emit($message);
+        # say "Emitted '$_' as $message.perl()";
+        is $client-received.receive.data.decode('ascii'), .uc, "Reply to $_ message correct";
+    }
+
+    $loud-service.stop;
+}
+
+# Test all combinations of client and server :nodelay settings
+for @nodelay-options X @nodelay-options {
+    subtest "Server listened with {.[0].perl}, client connected with {.[1].perl}",
+            { test-connector-nodelay(|$_) };
 }
 
 done-testing;

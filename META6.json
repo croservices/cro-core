@@ -22,6 +22,7 @@
                 "Cro::Sink": "lib/Cro/Sink.pm6",
                 "Cro::Source": "lib/Cro/Source.pm6",
                 "Cro::TCP": "lib/Cro/TCP.pm6",
+                "Cro::TCP::NoDelay": "lib/Cro/TCP/NoDelay.pm6",
                 "Cro::Transform": "lib/Cro/Transform.pm6",
                 "Cro::Types": "lib/Cro/Types.pm6",
                 "Cro::UnhandledErrorReporter": "lib/Cro/UnhandledErrorReporter.pm6",
