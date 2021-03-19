@@ -29,12 +29,10 @@ class Cro::MediaType {
     grammar Grammar {
         token TOP { <type> '/' <subtype> <parameters> \s* ';'? }
         token type { <[A..Za..z0..9_-]>+ }
+        token restricted-name { <[A..Za..z0..9]> <[A..Za..z0..9!#$&^_-]>+ }
         token subtype {
-            [
-            | $<name>=[<[A..Za..z0..9_-]>+]
-            | $<tree>=[<[A..Za..z0..9_-]>+] '.' $<name>=[<[A..Za..z0..9_.-]>+]
-            ]
-            [ '+' $<suffix>=[<[A..Za..z0..9_-]>+] ]?
+            <head=.restricted-name> ['.' <sub=.restricted-name>]*
+            ['+' <suffix=.restricted-name>]*
         }
         token parameters {
             [\s* ';' \s* <parameter>]*
@@ -63,9 +61,18 @@ class Cro::MediaType {
             );
         }
         method subtype($/) {
-            my %parts = 'subtype-name' => ~$<name>;
-            %parts<tree> = ~$<tree> if $<tree>;
-            %parts<suffix> = ~$<suffix> if $<suffix>;
+            my %parts;
+            if +$<sub> {
+                %parts<tree> = ~$<head>;
+                %parts<subtype-name> = join '.', $<sub>;
+            } else {
+                %parts<subtype-name> = ~$<head>;
+            }
+            if +$<suffix> {
+                my @extra-parts = $<suffix>>>.Str;
+                %parts<suffix> = @extra-parts.pop;
+                %parts<subtype-name> ~= join '', ('+' X~ @extra-parts);
+            }
             make %parts;
         }
         method parameters($/) {
@@ -93,7 +100,7 @@ class Cro::MediaType {
     }
 
     #| Given the example "application/vnd.foo+json; charset=UTF-8", this
-    #| would return ""vnd.foo+json"
+    #| would return "vnd.foo+json"
     method subtype() {
         ($!tree ?? "$!tree." !! "") ~
             $!subtype-name ~

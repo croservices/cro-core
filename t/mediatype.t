@@ -91,6 +91,15 @@ parses 'application/vnd.pgrst.object+json', 'Multiple dotted parts in the name',
     is-deeply .parameters.List, (), 'Correct parameters';
     is .Str, 'application/vnd.pgrst.object+json', 'Stringifies correctly';
 }
+parses 'application/vnd.pgrst.object+some+other+data+json', 'Multiple + parts in the name', {
+    is .type, 'application', 'Correct type';
+    is .subtype, 'vnd.pgrst.object+some+other+data+json', 'Correct subtype';
+    is .subtype-name, 'pgrst.object+some+other+data', 'Correct subtype name';
+    is .tree, 'vnd', 'Correct tree';
+    is .suffix, 'json', 'No suffix';
+    is-deeply .parameters.List, (), 'Correct parameters';
+    is .Str, 'application/vnd.pgrst.object+some+other+data+json', 'Stringifies correctly';
+}
 
 refuses 'text', 'No /subtype';
 refuses 'text', 'No subtype';
