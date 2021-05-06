@@ -175,6 +175,7 @@ throws-like { Cro.compose(TestSink, TestMessageSource) },
     my $sink = TestSink.new;
     my $comp = Cro.compose(TestMessageSource, TestTransform, AnotherTestTransform, $sink);
     ok $comp ~~ Cro::Service, 'Composing source/transform/sink gives a Cro::Service';
+    throws-like { $comp.stop() }, X::Cro::Service::StopWithoutStart, 'Throws a proper exception on .stop without .start';
     $comp.start();
     is $sink.sum, 13, 'Starting service processes all messages';
 }

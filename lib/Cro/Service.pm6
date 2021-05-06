@@ -1,3 +1,9 @@
+class X::Cro::Service::StopWithoutStart is Exception {
+    method message {
+        "The service was not started and the stop method is called on it, a missing .start?"
+    }
+}
+
 role Cro::Service {
     has @.components is required;
     has Tap $!service-tap;
@@ -18,6 +24,10 @@ role Cro::Service {
     }
 
     method stop(--> Nil) {
-        $!service-tap.close;
+        with $!service-tap {
+            $_.close;
+        } else {
+            die X::Cro::Service::StopWithoutStart.new;
+        }
     }
 }
