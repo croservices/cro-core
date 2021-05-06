@@ -25,7 +25,8 @@ role Cro::Service {
 
     method stop(--> Nil) {
         with $!service-tap {
-            $_.close;
+            .close;
+            $!service-tap = Nil;
         } else {
             die X::Cro::Service::StopWithoutStart.new;
         }
