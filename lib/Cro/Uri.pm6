@@ -6,11 +6,10 @@ class X::Cro::Uri::ParseError is Exception {
     }
 }
 
-#| An immutable representation of a URI
-class Cro::Uri {
-    #| The kind of host found in the URI (a domain name or some kind of IP address)
-    enum Host <RegName IPv4 IPv6 IPvFuture>;
+#| The kind of host found in the URI (a domain name or some kind of IP address)
+enum Cro::ResourceIdentifier::Host <RegName IPv4 IPv6 IPvFuture>;
 
+role Cro::ResourceIdentifier {
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
     #| this would return "https"
     has Str $.scheme;
@@ -29,7 +28,7 @@ class Cro::Uri {
 
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
     #| this would return Cro::Uri::Host::RegName
-    has Host $.host-class;
+    has Cro::ResourceIdentifier::Host $.host-class;
 
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
     #| this would return 44433
@@ -46,6 +45,12 @@ class Cro::Uri {
     #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
     #| this would return "here"
     has Str $.fragment;
+}
+
+#| An immutable representation of a URI
+class Cro::Uri does Cro::ResourceIdentifier {
+    #| The kind of host found in the URI (a domain name or some kind of IP address)
+    enum Host <RegName IPv4 IPv6 IPvFuture>;
 
     grammar GenericParser {
         token TOP {
@@ -87,7 +92,6 @@ class Cro::Uri {
         regex host:sym<IPv6address> {
             '[' <( <.IPv6address> )> ']'
         }
-
         token host:sym<IPvFuture> {
             '[' <(
             v <[A..Fa..f0..9]>+ '.'
@@ -248,28 +252,28 @@ class Cro::Uri {
         method host:sym<IPv4address>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPv4
+                host-class => Cro::ResourceIdentifier::Host::IPv4
             };
         }
 
         method host:sym<IPv6address>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPv6
+                host-class => Cro::ResourceIdentifier::Host::IPv6
             };
         }
 
         method host:sym<IPvFuture>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPvFuture
+                host-class => Cro::ResourceIdentifier::Host::IPvFuture
             };
         }
 
         method host:sym<reg-name>($/) {
             make {
                 host => decode-percents(~$/),
-                host-class => Cro::Uri::Host::RegName
+                host-class => Cro::ResourceIdentifier::Host::RegName
             };
         }
 
@@ -575,6 +579,6 @@ sub decode-percents(Str $s) is export(:decode-percents) {
 #| and then each octet represented as a percent escape.
 sub encode-percents(Str $s) is export(:encode-percents) {
     $s.subst: :g, /<-[A..Za..z0..9_.~-]>+/, {
-        .Str.encode('utf8').list.map({ '%' ~ .base(16) }).join
+        .Str.encode('utf8').list.map({ sprintf '%%%02s', .base(16) }).join
     }
 }
