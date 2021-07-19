@@ -357,14 +357,6 @@ class Cro::Uri does Cro::ResourceIdentifier {
         return Str;
     }
 
-    #| Return an array of path segments, decoding any percent sequences found in
-    #| them. Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return an array ["example", "foo"].
-    method path-segments(Cro::Uri:D: --> List) {
-        my $no-leader = $!path.starts-with('/') ?? $!path.substr(1) !! $!path;
-        $no-leader.split('/').map(&decode-percents).list
-    }
-
     #| Parse the string as a URI reference, and the apply the URI reference resolution
     #| algorithm to produce a new Cro::Uri. For example, if this was called on a
     #| Cro::Uri instance representing the URI "http://cro.serivces/docs", and the
