@@ -216,8 +216,8 @@ class Cro::Iri does Cro::ResourceIdentifier {
 
         method relative-ref($/) {
             my %parts = $<irelative-part>.ast;
-            %parts<query> = $<iquery>.ast if $<iquery>;
-            %parts<fragment> = $<ifragment>.ast if $<ifragment>;
+            %parts<query> = .ast with $<iquery>;
+            %parts<fragment> = .ast with $<ifragment>;
             make Cro::Iri.bless(|%parts);
         }
     }
@@ -232,7 +232,7 @@ class Cro::Iri does Cro::ResourceIdentifier {
     }
 
     sub encode-percents-except-ASCII(Str $s) {
-        $s.subst: :g, /<-[A..Za..z0..9_.~:/%-]>+/, {
+        $s.subst: :g, /<-[A..Za..z0..9_.~:/%=-]>+/, {
             .Str.encode('utf8').list.map({ sprintf '%%%02s', .base(16) }).join
         }
     }
@@ -242,7 +242,7 @@ class Cro::Iri does Cro::ResourceIdentifier {
             |(scheme => encode-percents-except-ASCII($_) with $!scheme),
             |(authority => encode-percents-except-ASCII($_) with $!authority),
             |(userinfo => encode-percents-except-ASCII($_) with $!userinfo),
-            host => encode-percents-except-ASCII($!host),
+            |(host => encode-percents-except-ASCII($_) with $!host),
             :$!host-class,
             :$!port,
             |(path => encode-percents-except-ASCII($_) with $!path),

@@ -70,7 +70,8 @@ parses 'GH-27',
         *.host eq "httpbin.org",
         *.host-class == Cro::ResourceIdentifier::Host::RegName,
         !*.userinfo.defined,
-        *.path eq '/get';
+        *.path eq '/get',
+        *.query eq 'q=تست';
 
 {
     my $uri = Cro::Iri.parse("foo://\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com:8080/").to-uri;
