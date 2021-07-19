@@ -47,7 +47,7 @@ parses 'Percent-encoded things in reg-name',
         *.scheme eq 'foo',
         *.authority eq '%C3%80b.%E3%82%A2%E3%82%A2.com:8080',
         *.host eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com",
-        *.host-class == Cro::Uri::Host::RegName,
+        *.host-class == Cro::ResourceIdentifier::Host::RegName,
         *.port == 8080,
         !*.userinfo.defined,
         *.path eq '/';
@@ -58,7 +58,7 @@ parses 'Percent-encoded things in reg-name',
         *.scheme eq 'foo',
         *.authority eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com:8080",
         *.host eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com",
-        *.host-class == Cro::Uri::Host::RegName,
+        *.host-class == Cro::ResourceIdentifier::Host::RegName,
         *.port == 8080,
         !*.userinfo.defined,
         *.path eq '/';
@@ -68,7 +68,7 @@ parses 'GH-27',
         *.scheme eq 'https',
         *.authority eq "httpbin.org",
         *.host eq "httpbin.org",
-        *.host-class == Cro::Uri::Host::RegName,
+        *.host-class == Cro::ResourceIdentifier::Host::RegName,
         !*.userinfo.defined,
         *.path eq '/get';
 
@@ -77,7 +77,7 @@ parses 'GH-27',
     is $uri.scheme, 'foo';
     is $uri.authority, '%C3%80b.%E3%82%A2%E3%82%A2.com:8080';
     is $uri.host, '%C3%80b.%E3%82%A2%E3%82%A2.com';
-    is $uri.host-class, Cro::Uri::Host::RegName;
+    is $uri.host-class, Cro::ResourceIdentifier::Host::RegName;
     is $uri.port, 8080;
     ok !$uri.userinfo.defined;
     is $uri.path, '/';

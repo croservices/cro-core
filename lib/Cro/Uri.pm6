@@ -1,3 +1,5 @@
+use Cro::ResourceIdentifier;
+
 class X::Cro::Uri::ParseError is Exception {
     has $.reason = 'malformed syntax';
     has $.uri-string is required;
@@ -6,52 +8,8 @@ class X::Cro::Uri::ParseError is Exception {
     }
 }
 
-#| The kind of host found in the URI (a domain name or some kind of IP address)
-enum Cro::ResourceIdentifier::Host <RegName IPv4 IPv6 IPvFuture>;
-
-role Cro::ResourceIdentifier {
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "https"
-    has Str $.scheme;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "user@cro.services:44433"
-    has Str $.authority;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "user"
-    has Str $.userinfo;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "cro.services"
-    has Str $.host;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return Cro::Uri::Host::RegName
-    has Cro::ResourceIdentifier::Host $.host-class;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return 44433
-    has $.port;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "/example/url"
-    has Str $.path;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "foo=bar&x=42"
-    has Str $.query;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "here"
-    has Str $.fragment;
-}
-
 #| An immutable representation of a URI
 class Cro::Uri does Cro::ResourceIdentifier {
-    #| The kind of host found in the URI (a domain name or some kind of IP address)
-    enum Host <RegName IPv4 IPv6 IPvFuture>;
-
     grammar GenericParser {
         token TOP {
             <URI>

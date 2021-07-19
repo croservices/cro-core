@@ -1,4 +1,5 @@
 use Cro::Uri :decode-percents, :encode-percents;
+use Cro::ResourceIdentifier;
 
 class X::Cro::Iri::ParseError is Exception {
     has $.reason = 'malformed syntax';
