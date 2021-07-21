@@ -1,5 +1,5 @@
-use Cro::Uri :decode-percents, :encode-percents;
-use Cro::ResourceIdentifier;
+use Cro::Uri;
+use Cro::ResourceIdentifier :decode-percents, :encode-percents;
 
 class X::Cro::Iri::ParseError is Exception {
     has $.reason = 'malformed syntax';
@@ -231,11 +231,6 @@ class Cro::Iri does Cro::ResourceIdentifier {
         }
     }
 
-    sub encode-percents-except-ASCII(Str $s) {
-        $s.subst: :g, /<-[A..Za..z0..9_.~:/%=-]>+/, {
-            .Str.encode('utf8').list.map({ sprintf '%%%02s', .base(16) }).join
-        }
-    }
 
     method to-uri(--> Cro::Uri) {
         Cro::Uri.new(

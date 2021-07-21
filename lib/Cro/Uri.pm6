@@ -1,4 +1,12 @@
-use Cro::ResourceIdentifier;
+use Cro::ResourceIdentifier :decode-percents, :encode-percents;
+
+package EXPORT::encode-percents {
+    our &encode-percents = &Cro::ResourceIdentifier::encode-percents;
+}
+
+package EXPORT::decode-percents {
+    our &decode-percents = &Cro::ResourceIdentifier::decode-percents;
+}
 
 class X::Cro::Uri::ParseError is Exception {
     has $.reason = 'malformed syntax';
@@ -510,25 +518,5 @@ class Cro::Uri does Cro::ResourceIdentifier {
         token varchar  { <alnum> | '_' | <pct-encoded> }
         token modifier-level4 { <prefix> | '*' }
         token prefix { ':' <[\x31..\x39]> \d ** 0..3 }
-    }
-}
-
-#| Perform percent sequence decoding according to the URI specification.
-#| Anything outside of the ASCII range will be interpreted as UTF-8.
-sub decode-percents(Str $s) is export(:decode-percents) {
-    $s.contains('%')
-        ?? $s.subst(:g, /[ '%' (<[A..Fa..f0..9]>**2) ]+/,
-            -> $perseq {
-                Blob.new($perseq[0].map({ :16(.Str) })).decode('utf8')
-            })
-        !! $s
-}
-
-#| Perform percent sequence encoding according to the URI specification.
-#| Any characters outside of the ASCII range will be encoded as UTF-8,
-#| and then each octet represented as a percent escape.
-sub encode-percents(Str $s) is export(:encode-percents) {
-    $s.subst: :g, /<-[A..Za..z0..9_.~-]>+/, {
-        .Str.encode('utf8').list.map({ sprintf '%%%02s', .base(16) }).join
     }
 }
