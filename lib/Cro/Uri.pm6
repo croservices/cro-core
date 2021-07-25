@@ -1,3 +1,13 @@
+use Cro::ResourceIdentifier :decode-percents, :encode-percents;
+
+package EXPORT::encode-percents {
+    our &encode-percents = &Cro::ResourceIdentifier::encode-percents;
+}
+
+package EXPORT::decode-percents {
+    our &decode-percents = &Cro::ResourceIdentifier::decode-percents;
+}
+
 class X::Cro::Uri::ParseError is Exception {
     has $.reason = 'malformed syntax';
     has $.uri-string is required;
@@ -7,46 +17,7 @@ class X::Cro::Uri::ParseError is Exception {
 }
 
 #| An immutable representation of a URI
-class Cro::Uri {
-    #| The kind of host found in the URI (a domain name or some kind of IP address)
-    enum Host <RegName IPv4 IPv6 IPvFuture>;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "https"
-    has Str $.scheme;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "user@cro.services:44433"
-    has Str $.authority;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "user"
-    has Str $.userinfo;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "cro.services"
-    has Str $.host;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return Cro::Uri::Host::RegName
-    has Host $.host-class;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return 44433
-    has $.port;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "/example/url"
-    has Str $.path;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "foo=bar&x=42"
-    has Str $.query;
-
-    #| Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return "here"
-    has Str $.fragment;
-
+class Cro::Uri does Cro::ResourceIdentifier {
     grammar GenericParser {
         token TOP {
             <URI>
@@ -87,7 +58,6 @@ class Cro::Uri {
         regex host:sym<IPv6address> {
             '[' <( <.IPv6address> )> ']'
         }
-
         token host:sym<IPvFuture> {
             '[' <(
             v <[A..Fa..f0..9]>+ '.'
@@ -248,28 +218,28 @@ class Cro::Uri {
         method host:sym<IPv4address>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPv4
+                host-class => Cro::ResourceIdentifier::Host::IPv4
             };
         }
 
         method host:sym<IPv6address>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPv6
+                host-class => Cro::ResourceIdentifier::Host::IPv6
             };
         }
 
         method host:sym<IPvFuture>($/) {
             make {
                 host => ~$/,
-                host-class => Cro::Uri::Host::IPvFuture
+                host-class => Cro::ResourceIdentifier::Host::IPvFuture
             };
         }
 
         method host:sym<reg-name>($/) {
             make {
                 host => decode-percents(~$/),
-                host-class => Cro::Uri::Host::RegName
+                host-class => Cro::ResourceIdentifier::Host::RegName
             };
         }
 
@@ -393,14 +363,6 @@ class Cro::Uri {
             }
         }
         return Str;
-    }
-
-    #| Return an array of path segments, decoding any percent sequences found in
-    #| them. Given the example "https://user@cro.services:44433/example/url?foo=bar&x=42#here",
-    #| this would return an array ["example", "foo"].
-    method path-segments(Cro::Uri:D: --> List) {
-        my $no-leader = $!path.starts-with('/') ?? $!path.substr(1) !! $!path;
-        $no-leader.split('/').map(&decode-percents).list
     }
 
     #| Parse the string as a URI reference, and the apply the URI reference resolution
@@ -556,25 +518,5 @@ class Cro::Uri {
         token varchar  { <alnum> | '_' | <pct-encoded> }
         token modifier-level4 { <prefix> | '*' }
         token prefix { ':' <[\x31..\x39]> \d ** 0..3 }
-    }
-}
-
-#| Perform percent sequence decoding according to the URI specification.
-#| Anything outside of the ASCII range will be interpreted as UTF-8.
-sub decode-percents(Str $s) is export(:decode-percents) {
-    $s.contains('%')
-        ?? $s.subst(:g, /[ '%' (<[A..Fa..f0..9]>**2) ]+/,
-            -> $perseq {
-                Blob.new($perseq[0].map({ :16(.Str) })).decode('utf8')
-            })
-        !! $s
-}
-
-#| Perform percent sequence encoding according to the URI specification.
-#| Any characters outside of the ASCII range will be encoded as UTF-8,
-#| and then each octet represented as a percent escape.
-sub encode-percents(Str $s) is export(:encode-percents) {
-    $s.subst: :g, /<-[A..Za..z0..9_.~-]>+/, {
-        .Str.encode('utf8').list.map({ '%' ~ .base(16) }).join
     }
 }
