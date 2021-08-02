@@ -1,3 +1,4 @@
+use Cro::Iri;
 use Cro::Uri;
 use Test;
 
@@ -5,16 +6,19 @@ sub parses($desc, $uri, *@checks, :$relative, :$ref) {
     my $method = $relative ?? 'parse-relative' !!
                  $ref      ?? 'parse-ref' !!
                               'parse';
-    with try Cro::Uri."$method"($uri) -> $parsed {
-        pass $desc;
-        for @checks.kv -> $i, $check {
-            ok $check($parsed), "Check {$i + 1}";
+    # IRI is a superset of URI, so has to parse everything URI can
+    for Cro::Uri, Cro::Iri -> $parser {
+        with try $parser."$method"($uri) -> $parsed {
+            pass $desc ~ " for $parser.^name()";
+            for @checks.kv -> $i, $check {
+                ok $check($parsed), "Check { $i + 1 }";
+            }
         }
-    }
-    else {
-        diag "URI parsing failed: $!";
-        flunk $desc;
-        skip 'Failed to parse', @checks.elems;
+        else {
+            diag "$parser.^name() parsing failed: $!";
+            flunk $desc;
+            skip 'Failed to parse', @checks.elems;
+        }
     }
 }
 

@@ -36,14 +36,21 @@ class Cro::Iri does Cro::ResourceIdentifier {
             <ihier-part>
             ["?" <iquery>]?
         }
+        token iref {
+            || <?before <.scheme> ':'> <IRI>
+            || <irelative-ref>
+        }
         token irelative-ref {
             <irelative-part> ["?" <iquery>]? ["#" <ifragment>]?
+            [ $ || <.panic('unexpected text at the end')> ]
         }
-        proto token irelative-part {*}
-        token irelative-part:sym<authority> { "//" <iauthority> <ipath-abempty> }
-        token irelative-part:sym<absolute> { <ipath-absolute> }
-        token irelative-part:sym<rootless> { <ipath-rootless> }
-        token irelative-part:sym<empty> { <ipath-empty> }
+
+        token irelative-part {
+            | [ '//' <iauthority> <ipath-abempty> ]
+            | <ipath-absolute>
+            | <ipath-noscheme>
+            | <ipath-empty>
+        }
 
         token iauthority {
             [<iuserinfo> "@"]?
@@ -82,16 +89,6 @@ class Cro::Iri does Cro::ResourceIdentifier {
             <isegment-nz> ["/" <isegment>]*
         }
         token ipath-empty { '' }
-
-        token ref {
-            || <?before <.scheme> ':'> <IRI>
-            || <relative-ref>
-        }
-
-        token relative-ref {
-            <irelative-part> [ '?' <iquery>] ? [ '#' <ifragment> ]?
-            [ $ || <.panic('unexpected text at end')> ]
-        }
 
         token isegment { <ipchar>* }
         token isegment-nz { <ipchar>+ }
@@ -198,6 +195,10 @@ class Cro::Iri does Cro::ResourceIdentifier {
             make ~$/;
         }
 
+        method ipath-noscheme($/) {
+            make ~$/;
+        }
+
         method ipath-empty($/) {
             make '';
         }
@@ -210,18 +211,25 @@ class Cro::Iri does Cro::ResourceIdentifier {
             make ~$/;
         }
 
-        method ref($/) {
-            make ($<IRI> // $<relative-ref>).ast
+        method iref($/) {
+            make ($<IRI> // $<irelative-ref>).ast
         }
 
-        method relative-ref($/) {
+        method irelative-ref($/) {
             my %parts = $<irelative-part>.ast;
             %parts<query> = .ast with $<iquery>;
             %parts<fragment> = .ast with $<ifragment>;
             make Cro::Iri.bless(|%parts);
         }
+
+        method irelative-part($/) {
+            make $<iauthority>
+                ?? %( $<iauthority>.ast, path => $<ipath-abempty>.ast )
+                !! %( path => ($<ipath-absolute> || $<ipath-noscheme> || $<ipath-empty>).ast );
+        }
     }
 
+    #| Parse a IRI into a Cro::Iri object
     method parse(Str() $iri-string, :$grammar = Cro::Iri::GenericParser,
                  :$actions = Cro::Iri::GenericActions.new --> Cro::Iri) {
         with $grammar.parse($iri-string, :$actions) {
@@ -231,6 +239,51 @@ class Cro::Iri does Cro::ResourceIdentifier {
         }
     }
 
+    #| Parse a IRI reference (that is, either an absolute or relative IRI) into
+    #| a Cro::Iri object
+    method parse-ref(Str() $iri-string, :$grammar = Cro::Iri::GenericParser,
+                     :$actions = Cro::Iri::GenericActions.new --> Cro::Iri) {
+        with $grammar.parse($iri-string, :$actions, :rule<iref>) {
+            .ast
+        }
+        else {
+            die X::Cro::Iri::ParseError.new(:$iri-string)
+        }
+    }
+
+    #| Parse a relative IRI into a Cro::Iri object (a relative IRI must not
+    #| include a scheme)
+    method parse-relative(Str() $iri-string, :$grammar = Cro::Iri::GenericParser,
+                          :$actions = Cro::Iri::GenericActions.new --> Cro::Iri) {
+        with $grammar.parse($iri-string, :$actions, :rule<irelative-ref>) {
+            .ast
+        }
+        else {
+            die X::Cro::Iri::ParseError.new(:$iri-string)
+        }
+    }
+
+    #| Obtain the user part of the user info, if any, with percent sequences
+    #| decoded
+    method user(--> Str) {
+        with $!userinfo {
+            decode-percents(.split(":", 2)[0])
+        }
+        else {
+            Str
+        }
+    }
+
+    #| Obtain the password part of the user info, if any, with percent sequences
+    #| decoded (use of this is considered deprecated)
+    method password(--> Str) {
+        with $!userinfo {
+            with .split(":", 2)[1] {
+                return decode-percents($_);
+            }
+        }
+        return Str;
+    }
 
     method to-uri(--> Cro::Uri) {
         Cro::Uri.new(
