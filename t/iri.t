@@ -13,7 +13,7 @@ sub parses($desc, $uri, *@checks, :$relative, :$ref) {
         }
     }
     else {
-        diag "URI parsing failed: $!";
+        diag "IRI parsing failed: $!";
         flunk $desc;
         skip 'Failed to parse', @checks.elems;
     }
