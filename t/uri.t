@@ -323,10 +323,6 @@ parses 'Can decode %-encoded things in userinfo',
     *.user eq "\c[LATIN CAPITAL LETTER A WITH GRAVE]b",
     *.password eq "\c[KATAKANA LETTER A]\c[KATAKANA LETTER A]";
 
-for qw/%% " ^ [ ] { } < >/ -> $bad {
-    refuses $bad ~ ' in path', 'foo://localhost/bar/a' ~ $bad ~ '/wat';
-}
-
 parses 'Path broken up into segments',
     'foo://example.com/abc/d-e/fg',
     *.scheme eq 'foo',
@@ -362,11 +358,6 @@ for qw[- . _ ~ : @ ! $ & ' ( ) * + , ; =] -> $ok {
         *.path eq "/bar/a{$ok}/yes",
         !*.query.defined,
         !*.fragment.defined;
-}
-
-for qw/%% " ^ [ ] { } < >/ -> $bad {
-    refuses $bad ~ ' in query', 'foo://localhost/bar?oh' ~ $bad ~ 'wat';
-    refuses $bad ~ ' in fragment', 'foo://localhost/bar#oh' ~ $bad ~ 'wat';
 }
 
 for qw[- . _ ~ : @ ! $ & ' ( ) * + , ; = / ?] -> $ok {
@@ -463,6 +454,20 @@ parses :ref, 'A relative URI when asked to parse a reference',
     *.path eq 'relative/path/to/resource.txt',
     !*.query.defined,
     !*.fragment.defined;
+
+parses 'URI with forbidden characters',
+    'http://foo.com/user/password?name[%23post_render][0]=printf&name[%23markup]=ABCZ%0A',
+    *.scheme eq 'http',
+    *.authority eq 'foo.com',
+    *.path eq '/user/password',
+    *.query eq 'name%5B%23post_render%5D%5B0%5D=printf&name%5B%23markup%5D=ABCZ%0A';
+
+parses :relative, 'URI with forbidden characters, relative',
+    '/user/password?name[%23post_render][0]=printf&name[%23markup]=ABCZ%0A',
+    !*.scheme.defined,
+    !*.authority.defined,
+    *.path eq '/user/password',
+    *.query eq 'name%5B%23post_render%5D%5B0%5D=printf&name%5B%23markup%5D=ABCZ%0A';
 
 given Cro::Uri.parse('http://a/b/c/d;p?q') -> $base {
     is $base.add("g:h"), "g:h";
