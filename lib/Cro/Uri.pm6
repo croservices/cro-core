@@ -124,23 +124,23 @@ class Cro::Uri does Cro::ResourceIdentifier {
         }
 
         token segment {
-            <.pchars>?
+            <pchars>?
         }
 
         token segment-nz {
-            <.pchars>
+            <pchars>
         }
 
         token query {
-            [ <.pchars> | "/" | "?" ]*
+            ( <pchars> | "/" | "?" )*
         }
 
         token fragment {
-            [ <.pchars> | "/" | "?" ]*
+            ( <pchars> | "/" | "?" )*
         }
 
         token pchars {
-            [<[A..Za..z0..9._~:@!$&'()*+,;=-]>+ | '%' <[A..Fa..f0..9]>**2]+
+            (<[A..Za..z0..9._~:@!$&'()*+,;=-]>+ | '%' <[A..Fa..f0..9]>**2 | $<broken>=<[\[\]\<\>\{\}\^\"]>)+
         }
 
         token ref {
@@ -150,7 +150,7 @@ class Cro::Uri does Cro::ResourceIdentifier {
 
         token relative-ref {
             <relative-part> [ '?' <query>] ? [ '#' <fragment> ]?
-            [ $ || <.panic('unexpected text at end')> ]
+            [ $ || <.panic('unexpected text at the end')> ]
         }
 
         token relative-part {
@@ -249,27 +249,56 @@ class Cro::Uri does Cro::ResourceIdentifier {
         }
 
         method path-abempty($/) {
-            make ~$/;
+            my $result = '';
+            for @$<segment> {
+                $result ~= '/';
+                $result ~= $_.ast with $_<pchars>;
+            }
+            make $result;
         }
 
         method path-absolute($/) {
-            make ~$/;
+            my $result = '/';
+            $result ~= $_<pchars>.ast with $<segment-nz>;
+            $result ~= '/' ~ $_<pchars>.ast for @$<segment>;
+            make $result;
         }
 
         method path-rootless($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_.ast with $<segment-nz>;
+            $result ~= '/' ~ $_<pchars>.ast for @$<segment>;
+            make $result;
         }
 
         method path-empty($/) {
             make '';
         }
 
+        method segment($/) {
+            make $<pchars>.ast;
+        }
+
+        method segment-nz($/) {
+            make $<pchars>.ast;
+        }
+
         method query($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_<pchars> ?? $_<pchars>.ast !! ~$_ for @$0;
+            make $result;
         }
 
         method fragment($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_<pchars> ?? $_<pchars>.ast !! ~$_ for @$0;
+            make $result;
+        }
+
+        method pchars($/) {
+            my $result = '';
+            $result ~= $_<broken> ?? encode-percents(~$_) !! ~$_ for @$0;
+            make $result;
         }
 
         method ref($/) {

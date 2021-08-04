@@ -21,7 +21,7 @@ class Cro::Iri does Cro::ResourceIdentifier {
             <ihier-part>
             ["?" <iquery>]?
             ["#" <ifragment>]?
-            [$ || <.panic('unexpected text at end')>]
+            [$ || <.panic('unexpected text at the end')>]
         }
 
         proto token ihier-part {*}
@@ -90,13 +90,13 @@ class Cro::Iri does Cro::ResourceIdentifier {
         }
         token ipath-empty { '' }
 
-        token isegment { <ipchar>* }
-        token isegment-nz { <ipchar>+ }
+        token isegment { <ipchars>? }
+        token isegment-nz { <ipchars> }
         token isegment-nz-nc { [<iunreserved> | <pct-encoded> | <sub-delims> | '@']+ }
 
-        token ipchar { [<iunreserved> | <pct-encoded> | <sub-delims> | ':' | '@'] }
-        token iquery { [<ipchar> | <iprivate> | '/' | '?']* }
-        token ifragment { [<ipchar> | '/' | '?']* }
+        token ipchars { (<iunreserved>+ | <pct-encoded>+ | <sub-delims>+ | ':'+ | '@'+ | $<broken>=<[\[\]\<\>\{\}\^\"]>)+ }
+        token iquery { (<ipchars> | <iprivate> | '/' | '?')* }
+        token ifragment { (<ipchars> | '/' | '?')* }
         token iunreserved { [<alnum> | '-' | '.' | '_' | '~' | <ucschar>] }
         token ucschar { <[\xA0..\xD7FF     \xF900..\xFDCF   \xFDF0..\xFFEF
                           \x10000..\x1FFFD \x20000..\x2FFFD \x30000..\x3FFFD
@@ -184,15 +184,26 @@ class Cro::Iri does Cro::ResourceIdentifier {
         }
 
         method ipath-abempty($/) {
-            make ~$/;
+            my $result = '';
+            for @$<isegment> {
+                $result ~= '/';
+                $result ~= $_.ast with $_<ipchars>;
+            }
+            make $result;
         }
 
         method ipath-absolute($/) {
-            make ~$/;
+            my $result = '/';
+            $result ~= $_<ipchars>.ast with $<isegment-nz>;
+            $result ~= '/' ~ $_<ipchars>.ast for @$<isegment>;
+            make $result;
         }
 
         method ipath-rootless($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_.ast with $<isegment-nz>;
+            $result ~= '/' ~ $_<ipchars>.ast for @$<isegment>;
+            make $result;
         }
 
         method ipath-noscheme($/) {
@@ -203,12 +214,30 @@ class Cro::Iri does Cro::ResourceIdentifier {
             make '';
         }
 
+        method isegment($/) {
+            make $<ipchars>.ast;
+        }
+
+        method isegment-nz($/) {
+            make $<ipchars>.ast;
+        }
+
         method iquery($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_<ipchars> ?? $_<ipchars>.ast !! ~$_ for @$0;
+            make $result;
         }
 
         method ifragment($/) {
-            make ~$/;
+            my $result = '';
+            $result ~= $_<ipchars> ?? $_<ipchars>.ast !! ~$_ for @$0;
+            make $result;
+        }
+
+        method ipchars($/) {
+            my $result = '';
+            $result ~= $_<broken> ?? encode-percents(~$_) !! ~$_ for @$0;
+            make $result;
         }
 
         method iref($/) {
