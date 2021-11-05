@@ -32,7 +32,7 @@ role Cro::Policy::Timeout[%phase-defaults] {
             } else {
                 %!phases{$kind} = Real($default);
                 with $supplied-value {
-                    warn X::Cro::Policy::Timeout::InvalidTimeoutValue.new(value => $_, :$kind);
+                    die X::Cro::Policy::Timeout::InvalidTimeoutValue.new(value => $_, :$kind);
                 }
             }
         }
