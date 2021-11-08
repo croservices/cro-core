@@ -38,7 +38,7 @@ role Cro::Policy::Timeout[%phase-defaults] {
         }
         if %phases {
             for %phases.keys {
-                warn X::Cro::Policy::Timeout::InvalidTimeout.new(
+                die X::Cro::Policy::Timeout::InvalidTimeout.new(
                         kinds => %phase-defaults.keys,
                         kind => $_);
             }
