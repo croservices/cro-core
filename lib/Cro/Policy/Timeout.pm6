@@ -3,7 +3,7 @@ class X::Cro::Policy::Timeout::InvalidTimeout is Exception {
     has @.kinds;
 
     method message {
-        "Invalid kind of timeout, expected one of [@!kinds.join(', ')], got: $!kind, ignoring";
+        "Invalid kind of timeout, expected one of [@!kinds.join(', ')], got: $!kind";
     }
 }
 
@@ -12,12 +12,12 @@ class X::Cro::Policy::Timeout::InvalidTimeoutValue is Exception {
     has $.value;
 
     method message {
-        "Invalid timeout value passed for $!kind, got: $!value, ignoring";
+        "Invalid timeout value passed for $!kind, got: $!value";
     }
 }
 
 role X::Cro::Policy::Timeout is Exception {
-    has $.phase;
+    has Str $.phase is required;
 }
 
 role Cro::Policy::Timeout[%phase-defaults] {
