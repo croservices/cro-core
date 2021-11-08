@@ -19,6 +19,7 @@
     "Cro::MediaType": "lib/Cro/MediaType.pm6",
     "Cro::Message": "lib/Cro/Message.pm6",
     "Cro::MessageWithBody": "lib/Cro/MessageWithBody.pm6",
+    "Cro::Policy::Timeout": "lib/Cro/Policy/Timeout.pm6",
     "Cro::Replyable": "lib/Cro/Replyable.pm6",
     "Cro::ResourceIdentifier": "lib/Cro/ResourceIdentifier.pm6",
     "Cro::Service": "lib/Cro/Service.pm6",
