@@ -73,7 +73,7 @@ parses 'GH-27',
         *.path eq '/get',
         *.query eq 'q=تست';
 
-{
+subtest 'to-uri transforms all Unicode' => {
     my $uri = Cro::Iri.parse("foo://\c[LATIN CAPITAL LETTER A WITH GRAVE]b.\c[KATAKANA LETTER A]\c[KATAKANA LETTER A].com:8080/").to-uri;
     is $uri.scheme, 'foo';
     is $uri.authority, '%C3%80b.%E3%82%A2%E3%82%A2.com:8080';
@@ -82,6 +82,14 @@ parses 'GH-27',
     is $uri.port, 8080;
     ok !$uri.userinfo.defined;
     is $uri.path, '/';
+}
+
+subtest 'to-uri does not mangle query string pieces' => {
+    my $uri = Cro::Iri.parse("http://localhost:7788/foo/bar?foo=1&bar=2").to-uri;
+    is $uri.scheme, 'http', 'Host OK';
+    is $uri.authority, 'localhost:7788', 'Authority OK';
+    is $uri.path, '/foo/bar', 'Path OK';
+    is $uri.query, 'foo=1&bar=2', 'Query string OK';
 }
 
 refuses "Unicode in protocol", "Ÿ://foo";

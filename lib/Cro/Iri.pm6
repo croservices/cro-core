@@ -335,15 +335,21 @@ class Cro::Iri does Cro::ResourceIdentifier {
 
     method to-uri(--> Cro::Uri) {
         Cro::Uri.new(
-            |(scheme => encode-percents-except-ASCII($_) with $!scheme),
-            |(authority => encode-percents-except-ASCII($_) with $!authority),
-            |(userinfo => encode-percents-except-ASCII($_) with $!userinfo),
-            |(host => encode-percents-except-ASCII($_) with $!host),
+            |(scheme => encode-non-ASCII($_) with $!scheme),
+            |(authority => encode-non-ASCII($_) with $!authority),
+            |(userinfo => encode-non-ASCII($_) with $!userinfo),
+            |(host => encode-non-ASCII($_) with $!host),
             :$!host-class,
             :$!port,
-            |(path => encode-percents-except-ASCII($_) with $!path),
-            |(query => encode-percents-except-ASCII($_) with $!query),
-            |(fragment => encode-percents-except-ASCII($_) with $!fragment),
+            |(path => encode-non-ASCII($_) with $!path),
+            |(query => encode-non-ASCII($_) with $!query),
+            |(fragment => encode-non-ASCII($_) with $!fragment),
         );
+    }
+
+    sub encode-non-ASCII(Str $s) is export(:encode-percents) {
+        $s.subst: :g, /<-[\x00..\x7F]>+/, {
+            .Str.encode('utf8').list.map({ $_ > 16 ?? "%" ~ .base(16) !! "%0" ~ .base(16) }).join
+        }
     }
 }

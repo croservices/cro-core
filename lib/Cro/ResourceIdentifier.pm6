@@ -21,12 +21,6 @@ package Cro::ResourceIdentifier {
             .Str.encode('utf8').list.map({ $_ > 16 ?? "%" ~ .base(16) !! "%0" ~ .base(16) }).join
         }
     }
-
-    our sub encode-percents-except-ASCII(Str $s) is export(:encode-percents) {
-        $s.subst: :g, /<-[A..Za..z0..9_.~:/%=-]>+/, {
-            .Str.encode('utf8').list.map({ $_ > 16 ?? "%" ~ .base(16) !! "%0" ~ .base(16) }).join
-        }
-    }
 }
 
 role Cro::ResourceIdentifier {
