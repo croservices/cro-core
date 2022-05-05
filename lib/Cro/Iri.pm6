@@ -314,6 +314,25 @@ class Cro::Iri does Cro::ResourceIdentifier {
         return Str;
     }
 
+    #| Turn the Cro::Iri object into a string representation of the IRI
+    multi method Str(Cro::Iri:D: --> Str) {
+        my $result = '';
+        with $!scheme {
+            $result ~= "$_:";
+        }
+        with $!authority {
+            $result ~= "//$_";
+        }
+        $result ~= $!path;
+        with $!query {
+            $result ~= "?$_";
+        }
+        with $!fragment {
+            $result ~= "#$_";
+        }
+        return $result;
+    }
+
     method to-uri(--> Cro::Uri) {
         Cro::Uri.new(
             |(scheme => encode-percents-except-ASCII($_) with $!scheme),

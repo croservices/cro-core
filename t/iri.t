@@ -86,4 +86,7 @@ parses 'GH-27',
 
 refuses "Unicode in protocol", "Ÿ://foo";
 
+is Cro::Iri.parse('https://httpbin.org/get?q=تست').Str, 'https://httpbin.org/get?q=تست',
+        'Str method on a Cro::Iri will round-trip it';
+
 done-testing;
