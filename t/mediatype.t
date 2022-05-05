@@ -106,4 +106,9 @@ refuses 'text', 'No subtype';
 refuses 'x{y}/plain', 'Bad chars in type';
 refuses 'text/z{d}', 'Bad chars in subtype';
 
+parses 'application/x-amz-json-1.1', 'Can handle subtype x-amz-json-1.1', {
+    is .type, 'application', 'Correct type';
+    is .subtype, 'x-amz-json-1.1', 'Correct subtype';
+}
+
 done-testing;

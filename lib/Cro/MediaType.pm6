@@ -29,7 +29,7 @@ class Cro::MediaType {
     grammar Grammar {
         token TOP { <type> '/' <subtype> <parameters> \s* ';'? }
         token type { <[A..Za..z0..9_-]>+ }
-        token restricted-name { <[A..Za..z0..9]> <[A..Za..z0..9!#$&^_-]>+ }
+        token restricted-name { <[A..Za..z0..9]> <[A..Za..z0..9!#$&^_-]>* }
         token subtype {
             <head=.restricted-name> ['.' <sub=.restricted-name>]*
             ['+' <suffix=.restricted-name>]*
