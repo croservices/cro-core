@@ -49,7 +49,7 @@ class Cro::MediaType {
         }
         token qtext { <-["\\\n]>+ }
         token quoted-pair { \\ <( . )> }
-        token token { <[A..Za..z0..9!#$%&'*+^_`{|}~-]>+ }
+        token token { <[A..Za..z0..9!#$%&'*+^_`{|}~\.-]>+ }
     }
 
     class Actions {
