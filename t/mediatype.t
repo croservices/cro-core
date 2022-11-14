@@ -72,6 +72,16 @@ parses 'text/plain; charset=UTF-8;', 'Media type with stray ; after parameter', 
     is .Str, 'text/plain; charset=UTF-8', 'Stringifies correctly';
 };
 
+parses 'application/json; charset=utf-8; api-version=7.1-preview.1', 'Media type with . in parameter', {
+    is .type, 'application', 'Correct type';
+    is .subtype, 'json', 'Correct subtype';
+    is .subtype-name, 'json', 'Correct subtype name';
+    is .tree, '', 'No tree';
+    is .suffix, '', 'No suffix';
+    is-deeply .parameters.List, ('charset' => 'utf-8', api-version => '7.1-preview.1'), 'Correct parameters';
+    is .Str, 'application/json; charset=utf-8; api-version=7.1-preview.1', 'Stringifies correctly';
+};
+
 parses 'text/plain;', 'Media type with stray ; at end, but no parameters', {
     is .type, 'text', 'Correct type';
     is .subtype, 'plain', 'Correct subtype';
