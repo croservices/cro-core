@@ -7,19 +7,7 @@ role Cro::Message {
     # cw: For OOB attributes associated with the messages. Consider
     #     that there is no way to know who the message is from,
     #     or where it is supposed to go.
-    has %!attributes;
-
-    method keys   { %!attributes.keys   }
-    method pairs  { %!attributes.pairs  }
-    method values { %!attributes.values }
-
-    method AT-KEY (\k) is rw {
-      %!attributes{k}
-    }
-
-    method EXISTS-key (\k) {
-      %!attributes{k}:exists;
-    }
+    has %!attributes handles <keys pairs values AT-KEY EXISTS-KEY>;
 
 
     # Provides trace output for use with CRO_TRACE=1 and  `cro trace ...`.
