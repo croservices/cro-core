@@ -2,12 +2,10 @@
 # application is processing. It might be a message from a message queue, a
 # ZeroMQ message, a HTTP request, a HTTP response, etc.
 role Cro::Message {
-    also does Associative;
-
     # cw: For OOB attributes associated with the messages. Consider
     #     that there is no way to know who the message is from,
     #     or where it is supposed to go.
-    has %!attributes handles <keys pairs values AT-KEY EXISTS-KEY>;
+    has %.attributes;
 
 
     # Provides trace output for use with CRO_TRACE=1 and  `cro trace ...`.
