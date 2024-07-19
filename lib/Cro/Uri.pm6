@@ -250,24 +250,21 @@ class Cro::Uri does Cro::ResourceIdentifier {
 
         method path-abempty($/) {
             my $result = '';
-            for @$<segment> {
-                $result ~= '/';
-                $result ~= $_.ast with $_<pchars>;
-            }
+            $result ~= '/' ~ (.ast with $_<pchars>) for @$<segment>;
             make $result;
         }
 
         method path-absolute($/) {
             my $result = '/';
             $result ~= $_<pchars>.ast with $<segment-nz>;
-            $result ~= '/' ~ $_<pchars>.ast for @$<segment>;
+            $result ~= '/' ~ (.ast with $_<pchars>) for @$<segment>;
             make $result;
         }
 
         method path-rootless($/) {
             my $result = '';
             $result ~= $_.ast with $<segment-nz>;
-            $result ~= '/' ~ $_<pchars>.ast for @$<segment>;
+            $result ~= '/' ~ (.ast with $_<pchars>) for @$<segment>;
             make $result;
         }
 
