@@ -11,8 +11,14 @@ package EXPORT::decode-percents {
 class X::Cro::Uri::ParseError is Exception {
     has $.reason = 'malformed syntax';
     has $.uri-string is required;
+    has $.origin;
+
     method message() {
-        "Unable to parse URI '$!uri-string': $!reason"
+      [~](
+        "Unable to parse URI '$!uri-string'",
+        ($.origin ?? " from { $!origin }" !! ''),
+        ": $!reason"
+      )
     }
 }
 
