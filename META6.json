@@ -1,7 +1,7 @@
 {
   "name": "Cro::Core",
   "description": "Implements the asynchronous pipeline at the heart of all Cro libraries.",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "api": "0",
   "auth": "zef:cro",
   "perl": "6.*",
