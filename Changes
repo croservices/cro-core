@@ -8,3 +8,4 @@ Revision history for Cro::Core
       consuming code can add origination information if so desired.
     - Change dependency management to allow individual Cro modules to be
       updated individually.
+    - Rename all `.pm6` files to `.rakumod` and `.t` files to `.rakutest`.
