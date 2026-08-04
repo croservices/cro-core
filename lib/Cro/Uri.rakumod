@@ -263,7 +263,9 @@ class Cro::Uri does Cro::ResourceIdentifier {
         method path-absolute($/) {
             my $result = '/';
             $result ~= $_<pchars>.ast with $<segment-nz>;
-            $result ~= '/' ~ (.ast with $_<pchars>) for @$<segment>;
+            for @$<segment> {
+                $result ~= '/' ~ $_<pchars>.ast if $_<pchars>;
+            }
             make $result;
         }
 
@@ -316,9 +318,16 @@ class Cro::Uri does Cro::ResourceIdentifier {
         }
 
         method relative-part($/) {
-            make $<authority>
+            if $/.orig.ends-with('/') {
+                make $<authority>
+                ?? %( $<authority>.ast, path => $<path-abempty>.ast )
+                !! %( path => ($<path-absolute> || $<path-noscheme> || $<path-empty>).ast~'/' );
+            }
+            else {
+                make $<authority>
                 ?? %( $<authority>.ast, path => $<path-abempty>.ast )
                 !! %( path => ($<path-absolute> || $<path-noscheme> || $<path-empty>).ast );
+            }
         }
 
         method path-noscheme($/) {
